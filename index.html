@@ -187,6 +187,117 @@ tbody tr:hover{background:#FAFBFC}
 .mood-btn span{font-size:9px;color:var(--tm)}
 .mood-btn.active{border-color:var(--blue);background:var(--sf2)}
 .principle-filter.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ===== 響應式手機版 ===== */
+@media (max-width: 768px) {
+  /* 整體佈局 */
+  .layout{flex-direction:column;}
+  .sidebar{
+    display:none; /* 手機版隱藏側邊欄 */
+  }
+  .main{
+    padding:16px 14px 80px; /* 底部留空給導覽列 */
+    width:100%;
+    overflow-x:hidden;
+  }
+
+  /* 頁面標題 */
+  .ph{margin-bottom:14px;}
+  .pt{font-size:17px;}
+
+  /* 卡片格線 */
+  .cg4{grid-template-columns:1fr 1fr!important;}
+  .cg3{grid-template-columns:1fr 1fr!important;}
+  .cg2{grid-template-columns:1fr!important;}
+
+  /* 卡片字體 */
+  .cval{font-size:16px!important;}
+  .clbl{font-size:11px;}
+
+  /* 表格水平捲軸 */
+  .twrap{overflow-x:auto;}
+  table{min-width:500px;}
+
+  /* 日期導覽列 */
+  .dbar{flex-wrap:wrap;gap:6px;}
+  .dbar button{font-size:12px;padding:5px 10px;}
+
+  /* 大盤資訊列 */
+  .mbar{flex-wrap:wrap;gap:8px 16px;}
+
+  /* 表單 */
+  .frow{flex-wrap:wrap;gap:8px;}
+  .fg{min-width:140px;}
+
+  /* 備忘錄頁籤 */
+  .memo-tab{padding:8px 12px;font-size:12px;}
+
+  /* 個股備忘三欄 → 單欄 */
+  [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
+  [style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
+
+  /* 持股淨值組成 */
+  .nap{margin:0!important;}
+
+  /* 走勢圖按鈕 */
+  .cwrap{margin-bottom:16px;}
+
+  /* 底部導覽列 */
+  #mobile-nav{
+    display:flex!important;
+  }
+}
+
+/* 底部導覽列（預設隱藏，手機才顯示）*/
+#mobile-nav{
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  background:var(--sf);
+  border-top:1px solid var(--bd);
+  z-index:500;
+  padding:0;
+  box-shadow:0 -2px 12px rgba(0,0,0,.08);
+}
+#mobile-nav .mnav-btn{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:8px 4px 10px;
+  border:none;
+  background:none;
+  cursor:pointer;
+  font-size:10px;
+  color:var(--tm);
+  font-family:var(--sans);
+  gap:3px;
+  transition:color .15s;
+}
+#mobile-nav .mnav-btn.active{color:var(--navy);font-weight:600;}
+#mobile-nav .mnav-btn svg{width:20px;height:20px;}
+#mobile-nav .mnav-ico{font-size:20px;line-height:1;}
+
+/* 手機版頂部標題列 */
+#mobile-header{
+  display:none;
+  position:sticky;
+  top:0;
+  background:var(--sf);
+  border-bottom:1px solid var(--bd);
+  padding:12px 16px;
+  z-index:400;
+  align-items:center;
+  justify-content:space-between;
+}
+@media (max-width: 768px){
+  #mobile-header{display:flex;}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -227,6 +338,12 @@ tbody tr:hover{background:#FAFBFC}
 </aside>
 <main class="main">
 <!-- DASHBOARD -->
+
+<!-- 手機版持倉頁面 -->
+<div id="page-mobile-holdings" class="page">
+  <div class="ph"><div class="pt">持倉概況</div></div>
+  <div id="mobile-holdings-list"></div>
+</div>
 <div id="page-dashboard" class="page active">
   <div class="ph"><div class="pt">今日總覽</div><div class="ps" id="d-sub">—</div></div>
   <div class="dbar">
@@ -653,20 +770,26 @@ tbody tr:hover{background:#FAFBFC}
 
   <!-- 個股備忘 -->
   <div id="memo-stock-panel" style="padding:0 18px 18px;display:none">
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-      <input type="text" id="memo-stock-search" placeholder="搜尋代號或名稱..." style="width:200px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;font-size:13px" oninput="renderStockMemos()">
+    <!-- 搜尋列 -->
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;padding-top:4px">
+      <input type="text" id="memo-stock-search" 
+        placeholder="搜尋代號或名稱..." 
+        style="width:180px;padding:7px 10px;border:1px solid var(--bd);border-radius:7px;font-size:13px;background:var(--sf)"
+        oninput="renderStockMemos()">
       <div style="display:flex;gap:4px">
-        <button class="btn btn-sm" id="memo-filter-active" onclick="setMemoFilter('active')" style="background:var(--navy);color:#fff;border-color:var(--navy)">持有中</button>
-        <button class="btn btn-sm" id="memo-filter-closed" onclick="setMemoFilter('closed')">已出清</button>
-        <button class="btn btn-sm" id="memo-filter-all" onclick="setMemoFilter('all')">全部</button>
+        <button class="btn btn-sm" id="memo-filter-active" onclick="setMemoFilter('active',this)"
+          style="background:var(--navy);color:#fff;border-color:var(--navy)">持有中</button>
+        <button class="btn btn-sm" id="memo-filter-closed" onclick="setMemoFilter('closed',this)">已出清</button>
+        <button class="btn btn-sm" id="memo-filter-all" onclick="setMemoFilter('all',this)">全部</button>
       </div>
-      <select id="memo-tag-filter" onchange="renderStockMemos()" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--sf);color:var(--tp)">
+      <select id="memo-tag-filter" onchange="renderStockMemos()"
+        style="padding:6px 8px;border:1px solid var(--bd);border-radius:7px;font-size:12px;background:var(--sf);color:var(--tp)">
         <option value="">所有產業</option>
       </select>
     </div>
+    <!-- 個股清單 -->
     <div id="memo-stock-list"></div>
   </div>
-
   <!-- 日記 -->
   <div id="memo-diary-panel" style="display:none;padding:0 18px 18px">
     <div class="fsec">
@@ -1064,7 +1187,24 @@ function todayStr(){return new Date().toISOString().slice(0,10);}
 function sp(p){
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
+  const pageEl=document.getElementById('page-'+p);
+  if(pageEl)pageEl.classList.add('active');
+  // 手機版底部導覽 active 同步
+  if(isMobile()){
+    const mobilePageMap={'dashboard':'dashboard','memo':'memo','realized':'more','chart':'more','perf':'more','history':'more','netasset':'more','debts':'more'};
+    const mPage=mobilePageMap[p]||'more';
+    ['dashboard','holdings-view','memo','watch','more'].forEach(m=>{
+      const b=document.getElementById('mnav-'+m);
+      if(b)b.classList.toggle('active',m===mPage);
+    });
+    // 手機版顯示卡片，隱藏表格
+    const mCards=document.getElementById('d-mobile-cards');
+    const mTbl=document.getElementById('d-tbl-wrap');
+    if(mCards&&mTbl){
+      if(p==='dashboard'){mCards.style.display='block';mTbl.style.display='none';}
+      else{mCards.style.display='none';mTbl.style.display='';}
+    }
+  }
   document.querySelectorAll('.nav-btn').forEach(e=>{if(e.getAttribute('onclick')&&e.getAttribute('onclick').includes("'"+p+"'"))e.classList.add('active');});
   if(p==='dashboard')renderDash();
   else if(p==='input')initInp();
@@ -1271,6 +1411,36 @@ function renderDash(){
 
 function se(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function sec(id,v,cls,base='csub'){const e=document.getElementById(id);if(!e)return;e.textContent=v;e.className=base+' '+cls;}
+
+function renderMobileStockCards(data){
+  const container = document.getElementById('d-mobile-cards');
+  if(!container) return;
+  container.style.display='block';
+  const stocks = data.stocks.filter(s=>s.mv>0).sort((a,b)=>b.mv-a.mv);
+  if(!stocks.length){container.innerHTML='<div class="nodata">無持股資料</div>';return;}
+  container.innerHTML = stocks.map(s=>{
+    const pnlColor = s.fpnl>=0?'var(--green)':'var(--red)';
+    const chgColor = (s.chg||0)>=0?'var(--green)':'var(--red)';
+    const pct = data.totalMv>0?(s.mv/data.totalMv*100).toFixed(1):'0.0';
+    return `<div style="background:var(--sf);border:1px solid var(--bdl);border-radius:10px;padding:13px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px;font-weight:700">${s.name}</span>
+          <span style="font-size:11px;color:var(--tm);font-family:var(--mono)">${s.code}</span>
+          <span style="font-size:10px;background:var(--sf3);padding:1px 5px;border-radius:3px;color:var(--tm)">${pct}%</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;font-family:var(--mono)">${s.price!=null?'$'+fn(s.price,2):'—'}</div>
+          <div style="font-size:11px;color:${chgColor}">${(s.chg||0)>=0?'+':''}${fn(s.chg||0,2)} (${fp(s.chgPct||0)}%)</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+        <span style="color:var(--tm)">${s.qty}張 · @$${fn(s.cost,2)} · $${fn(s.mv/10000,0)}萬</span>
+        <span style="font-weight:600;color:${pnlColor}">${s.fpnl>=0?'+':''}$${fn(s.fpnl,0)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function renderStockTable(data){
   const tbody=document.getElementById('d-tbody');
@@ -2822,6 +2992,17 @@ function importJSON(event){
         date:d.date||'2020-01-01',cat:d.cat||'debt',
         name:d.name,amt:d.amt,note:d.note||''
       }));
+      // migrate 舊版 stockMemos（string -> object）
+      if(state.stockMemos){
+        Object.keys(state.stockMemos).forEach(code=>{
+          const cm=state.stockMemos[code];
+          Object.keys(cm).forEach(k=>{
+            if(typeof cm[k]==='string'){
+              cm[k]={buy_note:cm[k]};
+            }
+          });
+        });
+      }
       Object.values(state.days||{}).forEach(d=>{
         if('index' in d){d.taiex=d.taiex??d.index;delete d.index;}
       });
@@ -3231,9 +3412,96 @@ function renderYearlySummary(events){
 
 // hook sp() to also init trades/realized
 
+
+// ===== 手機版 =====
+const isMobile = ()=> window.innerWidth <= 768;
+
+function mobileNav(page){
+  // 關閉更多選單
+  const more = document.getElementById('mobile-more-menu');
+  if(more) more.style.display='none';
+
+  // 更新底部導覽 active 狀態
+  const navPages = ['dashboard','holdings-view','memo','watch','more'];
+  navPages.forEach(p=>{
+    const btn = document.getElementById('mnav-'+p);
+    if(btn) btn.classList.toggle('active', p===page);
+  });
+
+  if(page==='holdings-view'){
+    renderMobileHoldings();
+    // 切換到 dashboard 頁面但顯示持倉內容
+    document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+    document.getElementById('page-mobile-holdings').classList.add('active');
+    return;
+  }
+  if(page==='watch'){
+    sp('memo');
+    setTimeout(()=>switchMemoTab('watch'),100);
+    return;
+  }
+  if(page==='more'){
+    if(more) more.style.display=more.style.display==='none'?'grid':'none';
+    return;
+  }
+  sp(page);
+}
+
+function renderMobileHoldings(){
+  const container = document.getElementById('mobile-holdings-list');
+  if(!container) return;
+  const d = computeDay(vd||latestDate()||todayStr());
+  if(!d){container.innerHTML='<div class="nodata">尚無資料</div>';return;}
+
+  const stocks = d.stocks.filter(s=>s.mv>0).sort((a,b)=>b.mv-a.mv);
+  container.innerHTML = stocks.map(s=>{
+    const pnlColor = s.fpnl>=0?'var(--green)':'var(--red)';
+    const chgColor = (s.chg||0)>=0?'var(--green)':'var(--red)';
+    return `<div style="background:var(--sf);border:1px solid var(--bdl);border-radius:10px;padding:14px 16px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <span style="font-size:15px;font-weight:700">${s.name}</span>
+          <span style="font-size:11px;color:var(--tm);margin-left:6px;font-family:var(--mono)">${s.code}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--tp)">$${fn(s.price||0,2)}</div>
+          <div style="font-size:12px;color:${chgColor}">${s.chg>=0?'+':''}${fn(s.chg||0,2)} (${fp(s.chgPct||0)}%)</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tm)">
+        <span>${s.qty}張 · 均成本 $${fn(s.cost||0,2)}</span>
+        <span style="font-weight:600;color:${pnlColor}">${s.fpnl>=0?'+':''}$${fn(s.fpnl||0,0)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// 初始化時偵測手機版
+function initMobile(){
+  if(!isMobile()) return;
+  // 初始化底部導覽
+  const mnav = document.getElementById('mnav-dashboard');
+  if(mnav) mnav.classList.add('active');
+}
+
 // ===== INIT =====
+// 個股備忘 radio 事件委派（非龍頭時顯示補充輸入框）
+document.addEventListener('change', function(e){
+  // 產業地位 select 切換非龍頭顯示補充框
+  if(e.target.tagName==='SELECT'&&e.target.id&&e.target.id.endsWith('-pos')){
+    const safeId=e.target.id.replace('-pos','');
+    const box=document.getElementById(safeId+'-nonleader');
+    if(box)box.style.display=e.target.value==='1'?'block':'none';
+  }
+    if(e.target.type==='radio'&&e.target.name&&e.target.name.endsWith('_position')){
+    const formId=e.target.name.replace('_position','');
+    const otherBox=document.getElementById(formId+'_position_other');
+    if(otherBox)otherBox.style.display=e.target.value==='1'?'block':'none';
+  }
+});
 
 vd=todayStr();navd=todayStr();
+initMobile();
 document.getElementById('d-pick').value=vd;
 document.getElementById('i-date').value=vd;
 document.getElementById('na-pick').value=navd;
@@ -3410,6 +3678,7 @@ function switchMemoTab(tab){
   else if(tab==='principle')renderPrinciples();
 }
 
+// ── 個股備忘（兩層結構）──
 function renderStockMemos(){
   const searchEl=document.getElementById('memo-stock-search');
   const search=searchEl?(searchEl.value||'').toLowerCase():'';
@@ -3423,19 +3692,20 @@ function renderStockMemos(){
     const primTags=(state.tags||[]).filter(t=>t.isPrimary!==false);
     const curVal=tagSel.value;
     tagSel.innerHTML='<option value="">所有產業</option>'+
-      primTags.map(t=>`<option value="${t.id}" ${t.id===curVal?'selected':''}>${t.name}</option>`).join('');
+      primTags.map(t=>`<option value="${t.id}"${t.id===curVal?' selected':''}>${t.name}</option>`).join('');
   }
   const tagFilter=tagSel?tagSel.value:'';
 
-  // 收集所有 code
+  // 收集所有 code 資訊
   const codeInfo={};
   state.holdings.forEach(h=>{
-    if(!codeInfo[h.code])codeInfo[h.code]={name:h.name,hasOpen:false,tags:[]};
-    if(!h.endDate)codeInfo[h.code].hasOpen=true;
+    if(!codeInfo[h.code])codeInfo[h.code]={name:h.name,hasOpen:false,tags:[],totalOpen:0};
+    if(!h.endDate){codeInfo[h.code].hasOpen=true;codeInfo[h.code].totalOpen+=h.qty;}
     if(h.tags&&h.tags.length&&!codeInfo[h.code].tags.length)
       codeInfo[h.code].tags=h.tags;
   });
 
+  // 篩選
   let codes=Object.keys(codeInfo).filter(code=>{
     const info=codeInfo[code];
     if(filterMode==='active'&&!info.hasOpen)return false;
@@ -3444,150 +3714,508 @@ function renderStockMemos(){
     if(tagFilter&&!info.tags.includes(tagFilter))return false;
     return true;
   }).sort((a,b)=>{
-    // 依最後一筆交易日期排序（最近的在前）
     const lastA=(state.trades.filter(t=>t.code===a&&!t._directPnl).pop()||{}).date||'';
     const lastB=(state.trades.filter(t=>t.code===b&&!t._directPnl).pop()||{}).date||'';
     return lastB.localeCompare(lastA);
   });
 
-  if(!codes.length){container.innerHTML='<div class="nodata">無符合條件的股票</div>';return;}
+  if(!codes.length){
+    container.innerHTML='<div class="nodata" style="padding:32px 0;text-align:center;color:var(--tm)">無符合條件的股票</div>';
+    return;
+  }
   if(!state.stockMemos)state.stockMemos={};
 
+  // 渲染第一層卡片
   container.innerHTML=codes.map(code=>{
     const info=codeInfo[code];
     const trades=state.trades.filter(t=>t.code===code&&!t._directPnl)
       .sort((a,b)=>a.date.localeCompare(b.date));
 
-    // 依 30 天分組
-    const groups=[];
-    let curGroup=null;
-    trades.forEach(t=>{
-      if(['buy','margin_buy'].includes(t.type)){
-        const lastGroup=groups[groups.length-1];
-        const lastDate=lastGroup?lastGroup.events[lastGroup.events.length-1].date:'';
-        const diff=lastDate?Math.abs(new Date(t.date)-new Date(lastDate))/(864e5):999;
-        if(!curGroup||diff>30){curGroup={events:[],startDate:t.date};groups.push(curGroup);}
-        curGroup.events.push({...t});
-      } else if(['sell','margin_sell'].includes(t.type)){
-        if(!curGroup)curGroup={events:[],startDate:trades[0]?.date||t.date};
-        curGroup.events.push({...t});
-      }
-    });
-
+    // 計算進場次數
+    const groups=buildGroups(trades);
     const codeMemos=state.stockMemos[code]||{};
-    const statusBadge=info.hasOpen?
-      '<span style="font-size:11px;background:#e8f5ee;color:#2E7D5E;padding:2px 6px;border-radius:4px;font-weight:600">持有中</span>':
-      '<span style="font-size:11px;background:var(--sf3);color:var(--tm);padding:2px 6px;border-radius:4px">已出清</span>';
 
-    // 反轉：最近進場在最上方
-    const reversedGroups=[...groups].reverse();
+    // 計算備忘完整度
     const totalGroups=groups.length;
-    const groupsHtml=reversedGroups.map((g,ri)=>{
-      const gi=totalGroups-1-ri; // 原始序號（第幾次進場）
-      const buyEvents=g.events.filter(e=>['buy','margin_buy'].includes(e.type));
-      const sellEvents=g.events.filter(e=>['sell','margin_sell'].includes(e.type));
-      const firstDate=g.startDate||g.events[0]?.date||'';
-      const lastDate=g.events[g.events.length-1]?.date||'';
+    const filledGroups=groups.filter(g=>{
+      const buyKey=`buy_${g.startDate}`;
+      return !!codeMemos[buyKey];
+    }).length;
 
-      // 買進摘要
-      const buyQty=buyEvents.reduce((s,e)=>s+e.qty,0);
-      const buyAvg=buyQty>0?buyEvents.reduce((s,e)=>s+e.qty*e.price,0)/buyQty:0;
-      const buyKey=`buy_${firstDate}`;
-      const buyMemo=codeMemos[buyKey]||'';
+    let memoIcon='';
+    let memoTitle='';
+    if(totalGroups===0){memoIcon='';memoTitle='';}
+    else if(filledGroups===totalGroups){
+      memoIcon=`<span style="color:#2E7D5E;font-size:13px">✅</span>`;
+      memoTitle='全部已填';
+    } else if(filledGroups>0){
+      memoIcon=`<span style="color:#e67e22;font-size:13px">📝</span>`;
+      memoTitle=`${filledGroups}/${totalGroups} 已填`;
+    } else {
+      memoIcon=`<span style="color:#ccc;font-size:13px">📝</span>`;
+      memoTitle='尚未填寫';
+    }
 
-      // 買進加碼明細（可折疊）
-      const buyDetailId=`buy-detail-${code}-${gi}`;
-      const buyDetail=buyEvents.map(e=>{
-        const label=['margin_buy'].includes(e.type)?'融資買':'買入';
-        return `<div style="display:flex;gap:8px;padding:3px 0;font-size:12px;color:var(--tm)">
-          <span style="color:#82c4a0;font-weight:600">↑</span>
-          <span style="font-family:var(--mono)">${e.date}</span>
-          <span>${label} ${e.qty}張 @$${e.price.toFixed(2)}</span>
-        </div>`;
-      }).join('');
+    // 產業標籤
+    const primTag=info.tags.map(tid=>state.tags.find(t=>t.id===tid))
+      .find(t=>t&&t.isPrimary!==false);
+    const tagBadge=primTag?
+      `<span style="font-size:11px;background:${primTag.color}18;color:${primTag.color};border:1px solid ${primTag.color}40;padding:1px 7px;border-radius:4px">${primTag.name}</span>`:'';
 
-      // 賣出摘要（只有賣出時才顯示）
-      let sellHtml='';
-      if(sellEvents.length){
-        const sellQty=sellEvents.reduce((s,e)=>s+e.qty,0);
-        const sellAvg=sellQty>0?sellEvents.reduce((s,e)=>s+e.qty*e.price,0)/sellQty:0;
-        // 計算損益（簡易：賣出均價 - 買進均價）* 數量
-        const pnl=(sellAvg-buyAvg)*Math.min(buyQty,sellQty)*1000;
-        const sellKey=`sell_${firstDate}`;
-        const sellMemo=codeMemos[sellKey]||'';
-        const sellDetail=sellEvents.map(e=>{
-          const label=['margin_sell'].includes(e.type)?'融資賣':'賣出';
-          return `<div style="display:flex;gap:8px;padding:3px 0;font-size:12px;color:var(--tm)">
-            <span style="color:#f0a884;font-weight:600">↓</span>
-            <span style="font-family:var(--mono)">${e.date}</span>
-            <span>${label} ${e.qty}張 @$${e.price.toFixed(2)}</span>
-          </div>`;
-        }).join('');
+    const statusBadge=info.hasOpen?
+      `<span style="font-size:11px;background:#e8f5ee;color:#2E7D5E;padding:2px 7px;border-radius:4px;font-weight:600">持有中</span>`:
+      `<span style="font-size:11px;background:#f2f2f2;color:#888;padding:2px 7px;border-radius:4px">已出清</span>`;
 
-        sellHtml=`<div style="margin-top:10px;padding:10px 12px;background:#fff8f5;border-radius:8px;border:1px solid #f0e0d8">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:12px;font-weight:600;color:#c0614a">📉 賣出</span>
-            <span style="font-size:12px;color:var(--tm);font-family:var(--mono)">
-              共${sellEvents.length}筆 · ${sellQty}張 · 均價 $${sellAvg.toFixed(2)}
-              <span style="color:${pnl>=0?'var(--green)':'var(--red)'}"> 損益${pnl>=0?'+':''}${(pnl/10000).toFixed(1)}萬</span>
-            </span>
+    const holdingText=info.hasOpen?
+      `持有 ${info.totalOpen} 張`:`已出清`;
+
+    return `<div class="stock-memo-card" id="smc-${code}" 
+      style="background:var(--sf);border:1px solid var(--bdl);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s"
+      onmouseenter="this.style.boxShadow='0 2px 12px rgba(0,0,0,.08)'"
+      onmouseleave="this.style.boxShadow=''">
+      <!-- 第一層：點擊展開 -->
+      <div onclick="toggleStockMemo('${code}')" 
+        style="display:flex;align-items:center;padding:12px 16px;cursor:pointer;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:15px;font-weight:700;color:var(--tp)">${info.name}</span>
+            <span style="font-family:var(--mono);font-size:12px;color:var(--tm)">${code}</span>
+            ${statusBadge}
+            ${tagBadge}
           </div>
-          <div style="margin-bottom:8px;padding:6px 8px;background:var(--sf2);border-radius:6px;font-size:12px;color:var(--tm)">${sellDetail}</div>
-          <textarea style="width:100%;height:56px;padding:7px 10px;border:1px solid var(--bdl);border-radius:6px;font-size:12px;resize:vertical;background:var(--sf);color:var(--tp);box-sizing:border-box"
-            placeholder="賣出理由（達標？停損？市場轉變...）"
-            data-code="${code}" data-key="${sellKey}"
-            onchange="saveStockMemo2(this)">${sellMemo}</textarea>
-        </div>`;
-      }
-
-      return `<div style="border:1px solid var(--bdl);border-radius:10px;margin-bottom:10px;overflow:hidden">
-        <div style="background:var(--sf2);padding:9px 14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;font-weight:700;color:var(--ts)">第${gi+1}次進場</span>
-          <span style="font-size:11px;font-family:var(--mono);color:var(--tm)">${firstDate} ~ ${lastDate}</span>
-        </div>
-        <div style="padding:10px 12px">
-          <!-- 買進區塊 -->
-          <div style="padding:10px 12px;background:#f5fcf8;border-radius:8px;border:1px solid #d8eed8">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-size:12px;font-weight:600;color:#2E7D5E">📈 買進</span>
-              <span style="font-size:12px;color:var(--tm);font-family:var(--mono)">
-                共${buyEvents.length}筆 · ${buyQty}張 · 均價 $${buyAvg.toFixed(2)}
-              </span>
-            </div>
-            <!-- 加碼明細（預設顯示，可點標題折疊） -->
-            <div style="margin-bottom:8px;padding:6px 8px;background:var(--sf2);border-radius:6px;font-size:12px">${buyDetail}</div>
-            <textarea style="width:100%;height:56px;padding:7px 10px;border:1px solid var(--bdl);border-radius:6px;font-size:12px;resize:vertical;background:var(--sf);color:var(--tp);box-sizing:border-box"
-              placeholder="買進理由（為什麼買？市場背景、邏輯...）"
-              data-code="${code}" data-key="${buyKey}"
-              onchange="saveStockMemo2(this)">${buyMemo}</textarea>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tm)">
+            <span>${totalGroups} 次進場</span>
+            <span>·</span>
+            <span>${holdingText}</span>
+            ${memoTitle?`<span>·</span><span style="display:flex;align-items:center;gap:3px">${memoIcon} ${memoTitle}</span>`:''}
           </div>
-          ${sellHtml}
         </div>
-      </div>`;
-    }).join('');
-
-    return `<div style="margin-bottom:20px">
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:2px solid var(--bd);margin-bottom:10px">
-        <span style="font-size:15px;font-weight:700">${info.name}</span>
-        <span style="font-family:var(--mono);font-size:12px;color:var(--tm)">${code}</span>
-        ${statusBadge}
+        <span class="smc-arrow" id="smc-arrow-${code}" 
+          style="color:var(--tm);font-size:16px;transition:transform .2s;flex-shrink:0">›</span>
       </div>
-      ${groupsHtml||'<div class="nodata" style="font-size:12px">無交易記錄</div>'}
+      <!-- 第二層：展開內容 -->
+      <div id="smc-detail-${code}" style="display:none;border-top:1px solid var(--bdl)">
+        ${renderStockDetail(code, groups, codeMemos)}
+      </div>
     </div>`;
   }).join('');
 }
 
-function setMemoFilter(mode){
+function toggleStockMemo(code){
+  const detail=document.getElementById(`smc-detail-${code}`);
+  const arrow=document.getElementById(`smc-arrow-${code}`);
+  if(!detail)return;
+  const isOpen=detail.style.display!=='none';
+  detail.style.display=isOpen?'none':'block';
+  if(arrow)arrow.style.transform=isOpen?'':'rotate(90deg)';
+}
+
+function buildGroups(trades){
+  const groups=[];let curGroup=null;
+  trades.forEach(t=>{
+    if(['buy','margin_buy'].includes(t.type)){
+      const lastGroup=groups[groups.length-1];
+      const lastDate=lastGroup?lastGroup.events[lastGroup.events.length-1].date:'';
+      const diff=lastDate?Math.abs(new Date(t.date)-new Date(lastDate))/(864e5):999;
+      if(!curGroup||diff>30){curGroup={events:[],startDate:t.date};groups.push(curGroup);}
+      curGroup.events.push({...t});
+    } else if(['sell','margin_sell'].includes(t.type)){
+      if(!curGroup)curGroup={events:[],startDate:trades[0]?.date||t.date};
+      curGroup.events.push({...t});
+    }
+  });
+  return groups;
+}
+
+function renderStockDetail(code, groups, codeMemos){
+  if(!groups.length)return'<div style="padding:16px;color:var(--tm);font-size:13px">無交易記錄</div>';
+
+  const reversedGroups=[...groups].reverse();
+  const totalGroups=groups.length;
+
+  return reversedGroups.map((g,ri)=>{
+    const gi=totalGroups-1-ri;
+    const buyEvents=g.events.filter(e=>['buy','margin_buy'].includes(e.type));
+    const sellEvents=g.events.filter(e=>['sell','margin_sell'].includes(e.type));
+    const firstDate=g.startDate||g.events[0]?.date||'';
+    const lastDate=g.events[g.events.length-1]?.date||'';
+    const buyQty=buyEvents.reduce((s,e)=>s+e.qty,0);
+    const buyAvg=buyQty>0?buyEvents.reduce((s,e)=>s+e.qty*e.price,0)/buyQty:0;
+    const sellQty=sellEvents.reduce((s,e)=>s+e.qty,0);
+    const buyKey=`buy_${firstDate}`;
+    const sellKey=`sell_${firstDate}`;
+    const buyMemo=codeMemos[buyKey]||null;
+    const sellMemo=codeMemos[sellKey]||null;
+    const pnl=sellEvents.length?(buyAvg>0?(sellEvents.reduce((s,e)=>s+e.qty*e.price,0)/sellQty-buyAvg)*Math.min(buyQty,sellQty)*1000:0):0;
+
+    return `<div style="padding:14px 16px;border-bottom:1px solid var(--bdl)">
+      <!-- 進場標題 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--navy)">第 ${gi+1} 次進場</span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--tm)">${firstDate} ~ ${lastDate}</span>
+      </div>
+
+      <!-- 買進摘要 -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:#2E7D5E;background:#e8f5ee;padding:2px 8px;border-radius:4px">📈 買入</span>
+        <span style="font-size:12px;color:var(--tm);font-family:var(--mono)">共${buyEvents.length}筆 · ${buyQty}張 · 均價 $${fn(buyAvg,2)}</span>
+        ${buyMemo?'<span style="font-size:11px;color:#2E7D5E">✅ 已填備忘</span>':'<span style="font-size:11px;color:#e67e22">📝 尚未填寫</span>'}
+      </div>
+
+      <!-- 買進備忘區 -->
+      <div id="buy-memo-area-${code}-${gi}" style="margin-bottom:${sellEvents.length?'12px':'0'}">
+        ${buyMemo
+          ?renderMemoCard(buyMemo,'buy',code,buyKey,gi)
+          :renderMemoBtn('buy',code,buyKey,gi)}
+      </div>
+
+      <!-- 賣出摘要 -->
+      ${sellEvents.length?`
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:#c0614a;background:#fff0eb;padding:2px 8px;border-radius:4px">📉 賣出</span>
+        <span style="font-size:12px;color:var(--tm);font-family:var(--mono)">共${sellEvents.length}筆 · ${sellQty}張
+          <span style="color:${pnl>=0?'var(--green)':'var(--red)'}"> 損益${pnl>=0?'+':'-'}$${fn(Math.abs(pnl),0)}</span>
+        </span>
+        ${sellMemo?'<span style="font-size:11px;color:#2E7D5E">✅ 已填備忘</span>':'<span style="font-size:11px;color:#e67e22">📝 尚未填寫</span>'}
+      </div>
+      <div id="sell-memo-area-${code}-${gi}">
+        ${sellMemo
+          ?renderMemoCard(sellMemo,'sell',code,sellKey,gi)
+          :renderMemoBtn('sell',code,sellKey,gi)}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// 尚未填寫時的按鈕
+function renderMemoBtn(type,code,key,gi){
+  const label=type==='buy'?'填寫買進備忘':'填寫賣出備忘';
+  return `<button class="btn btn-sm" 
+    style="font-size:12px;color:var(--blue);border-color:var(--blue);padding:5px 12px"
+    onclick="openMemoForm('${type}','${code}','${key}',${gi})">
+    ✏️ ${label}
+  </button>`;
+}
+
+// 開啟表單（inline展開）
+function openMemoForm(type,code,key,gi){
+  const areaId=`${type}-memo-area-${code}-${gi}`;
+  const area=document.getElementById(areaId);
+  if(!area)return;
+  const existingMemo=(state.stockMemos[code]||{})[key]||null;
+  area.innerHTML=renderMemoForm(type,code,key,gi,existingMemo);
+}
+
+// 備忘表單
+// 從觀察名單自動帶入資料
+function getWatchPrefill(code){
+  const watch=(state.watchlist||[]).find(w=>
+    w.code===code&&(w.status==='done'||w.status==='ready')
+  );
+  if(!watch)return null;
+  return {
+    source: watch.source||'',
+    reason_prefill: watch.reason||'',
+    target: watch.priceLo&&watch.priceHi?`$${watch.priceLo} ~ $${watch.priceHi}`:
+            watch.priceLo?`$${watch.priceLo}`:watch.priceHi?`$${watch.priceHi}`:'',
+  };
+}
+
+// 備忘表單（整合版）
+function renderMemoForm(type,code,key,gi,prefill){
+  const isBuy=type==='buy';
+  const p=prefill||{};
+
+  // 嘗試從觀察名單帶入
+  const watchData=(!prefill&&isBuy)?getWatchPrefill(code):null;
+  if(watchData&&!p.source)p.source=watchData.source;
+  if(watchData&&!p.target)p.target=watchData.target;
+  if(watchData&&!p.reason_long)p.reason_long=watchData.reason_prefill;
+
+  const safeId=`mf-${type}-${code}-${gi}`;
+  const SOURCE_OPTIONS=['','self','tip','ir','industry','technical','other'];
+  const SOURCE_LABELS=['— 來源（可選）—','自己研究','聽聞/推薦','法說會/財報','產業趨勢','技術分析','其他'];
+  const HOLD_OPTIONS=['short','swing','long'];
+  const HOLD_LABELS=['短線（1個月內）','波段（2~6個月）','長期（6個月以上）'];
+
+  let formHtml='';
+
+  if(isBuy){
+    // 第一段：橫排基本資訊
+    const posVal=p.position!==undefined?p.position:-1;
+    const holdVal=p.hold||'swing';
+    const srcVal=p.source||'';
+
+    formHtml+=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">產業地位</div>
+        <select id="${safeId}-pos" style="width:100%;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;background:var(--sf)">
+          <option value="-1" ${posVal===-1?'selected':''}>— 選擇 —</option>
+          <option value="0" ${posVal===0?'selected':''}>✅ 產業龍頭</option>
+          <option value="1" ${posVal===1?'selected':''}>⚠️ 非龍頭</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">來源</div>
+        <select id="${safeId}-src" style="width:100%;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;background:var(--sf)">
+          ${SOURCE_OPTIONS.map((v,i)=>`<option value="${v}" ${srcVal===v?'selected':''}>${SOURCE_LABELS[i]}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">預計持有</div>
+        <select id="${safeId}-hold" style="width:100%;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;background:var(--sf)">
+          ${HOLD_OPTIONS.map((v,i)=>`<option value="${v}" ${holdVal===v?'selected':''}>${HOLD_LABELS[i]}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">目標價</div>
+        <input type="text" id="${safeId}-target" value="${p.target||''}"
+          style="width:100%;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;box-sizing:border-box;background:var(--sf)"
+          placeholder="$___">
+      </div>
+    </div>`;
+
+    // 非龍頭補充說明
+    formHtml+=`<div id="${safeId}-nonleader" style="display:${posVal===1?'block':'none'};margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">⚠️ 非龍頭原因 — 你看到了別人還沒看到的什麼？</div>
+      <textarea id="${safeId}-pos-other"
+        style="width:100%;height:52px;padding:7px 10px;border:1px solid #f0c875;border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:#fffdf0"
+        placeholder="說明原因...">${p.position_other||''}</textarea>
+    </div>`;
+
+    // 第二段：看好原因三欄並排
+    formHtml+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:8px">為什麼現在看好</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:11px;color:#82c4a0;font-weight:600;margin-bottom:4px">🟢 短期（1個月內）</div>
+          <textarea id="${safeId}-rs"
+            style="width:100%;height:80px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+            placeholder="近期動能、消息面、技術面...">${p.reason_short||''}</textarea>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#e0a030;font-weight:600;margin-bottom:4px">🟡 中期（2～6個月）</div>
+          <textarea id="${safeId}-rm"
+            style="width:100%;height:80px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+            placeholder="訂單、毛利、市占成長...">${p.reason_mid||''}</textarea>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#7fb3d3;font-weight:600;margin-bottom:4px">🔵 長期（6個月以上）</div>
+          <textarea id="${safeId}-rl"
+            style="width:100%;height:80px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+            placeholder="${watchData?'（已從觀察名單帶入）':'護城河、長期故事...'}">${p.reason_long||''}</textarea>
+        </div>
+      </div>
+    </div>`;
+
+    // 第三段：催化劑 + 主要風險（兩欄並排）
+    formHtml+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">⚡ 催化劑</div>
+        <textarea id="${safeId}-catalyst"
+          style="width:100%;height:72px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+          placeholder="什麼事件讓市場「看見」這個機會？">${p.catalyst||''}</textarea>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">⚠️ 主要風險</div>
+        <textarea id="${safeId}-risk"
+          style="width:100%;height:72px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+          placeholder="什麼情況讓論點失效？如何處理？">${p.risk||''}</textarea>
+      </div>
+    </div>`;
+
+    // 第四段：後續觀察指標
+    formHtml+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">📊 後續觀察指標</div>
+      <textarea id="${safeId}-monitor"
+        style="width:100%;height:60px;padding:7px 10px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+        placeholder="持有期間要追蹤什麼來確認論點還成立？（月營收、毛利率、外資動向...）">${p.monitor||''}</textarea>
+    </div>`;
+
+    // 觀察名單帶入提示
+    if(watchData&&watchData.reason_prefill){
+      formHtml+=`<div style="font-size:11px;color:var(--blue);background:#f0f6ff;border:1px solid #c8ddf5;border-radius:6px;padding:7px 10px;margin-bottom:10px">
+        💡 已從觀察名單帶入：目標價、來源、關注原因（長期看好欄位）
+      </div>`;
+    }
+
+  } else {
+    // 賣出表單
+    const SELL_OPTIONS=['目標價達標','停損','論點改變','資金調度','其他'];
+    formHtml+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:6px">賣出原因</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${SELL_OPTIONS.map(o=>`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--bdl);background:var(--sf2)">
+          <input type="radio" name="${safeId}-sr" value="${o}" ${p.sell_reason===o?'checked':''}> ${o}
+        </label>`).join('')}
+      </div>
+    </div>`;
+
+    formHtml+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">當下判斷</div>
+        <textarea id="${safeId}-sell_note"
+          style="width:100%;height:80px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+          placeholder="為什麼是現在賣，而不是更早或更晚？">${p.sell_note||''}</textarea>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tm);margin-bottom:5px">事後檢討（可出場後再回來填）</div>
+        <textarea id="${safeId}-review"
+          style="width:100%;height:80px;padding:7px 8px;border:1px solid var(--bdl);border-radius:7px;font-size:12px;resize:vertical;box-sizing:border-box;background:var(--sf)"
+          placeholder="這次學到了什麼？下次會怎麼做不一樣？">${p.review||''}</textarea>
+      </div>
+    </div>`;
+  }
+
+  return `<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-top:8px">
+    ${formHtml}
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" style="flex:1" onclick="cancelMemoForm('${type}','${code}','${key}',${gi})">取消</button>
+      <button class="btn btn-p" style="flex:2" onclick="submitMemoV2('${type}','${code}','${key}',${gi},'${safeId}')">儲存備忘 →</button>
+    </div>
+  </div>`;
+}
+
+
+
+function renderMemoCard(memo,type,code,key,gi){
+  const isBuy=type==='buy';
+  let rows='';
+  const HOLD_CARD={short:'短線',swing:'波段',long:'長期'};
+  const SRC_CARD={self:'自己研究',tip:'聽聞/推薦',ir:'法說會/財報',industry:'產業趨勢',technical:'技術分析',other:'其他'};
+  if(isBuy){
+    // 第一段摘要橫排
+    const meta=[];
+    if(memo.position===0)meta.push('✅ 產業龍頭');
+    else if(memo.position===1)meta.push(`⚠️ 非龍頭${memo.position_other?'：'+memo.position_other:''}`);
+    if(memo.source&&SRC_CARD[memo.source])meta.push('來源：'+SRC_CARD[memo.source]);
+    if(memo.hold&&HOLD_CARD[memo.hold])meta.push('預計持有：'+HOLD_CARD[memo.hold]);
+    if(memo.target)meta.push('目標價：'+memo.target);
+    if(meta.length)rows+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bdl)">
+      ${meta.map(m=>`<span style="font-size:12px;background:var(--sf3);padding:3px 9px;border-radius:5px;color:var(--ts)">${m}</span>`).join('')}
+    </div>`;
+    if(memo.reason_short)rows+=memoRow('🟢 短期看好',memo.reason_short);
+    if(memo.reason_mid)rows+=memoRow('🟡 中期看好',memo.reason_mid);
+    if(memo.reason_long)rows+=memoRow('🔵 長期看好',memo.reason_long);
+    if(memo.catalyst)rows+=memoRow('⚡ 催化劑',memo.catalyst);
+    if(memo.risk)rows+=memoRow('⚠️ 主要風險',memo.risk);
+    if(memo.monitor)rows+=memoRow('📊 觀察指標',memo.monitor);
+  } else {
+    if(memo.sell_reason)rows+=memoRow('賣出原因',memo.sell_reason);
+    if(memo.sell_note)rows+=memoRow('當下判斷',memo.sell_note);
+    if(memo.review)rows+=memoRow('事後檢討',memo.review);
+  }
+  if(!rows)rows='<div style="color:var(--tm);font-size:12px;font-style:italic">（無內容）</div>';
+
+  return `<div style="background:var(--sf);border:1px solid var(--bdl);border-radius:8px;padding:12px 14px;margin-top:4px">
+    <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px">
+      <button class="btn btn-sm" onclick="openMemoForm('${type}','${code}','${key}',${gi})" style="font-size:11px">✏️ 編輯</button>
+      <button class="btn btn-sm btn-d" onclick="deleteMemoV2('${code}','${key}','${type}',${gi})" style="font-size:11px">刪除</button>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function memoRow(label,value){
+  return `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bdl)">
+    <div style="font-size:11px;font-weight:700;color:var(--tm);letter-spacing:.04em;margin-bottom:3px;text-transform:uppercase">${label}</div>
+    <div style="font-size:13px;line-height:1.65;color:var(--tp)">${String(value).replace(/\n/g,'<br>')}</div>
+  </div>`;
+}
+
+function submitMemoV2(type,code,key,gi,safeId){
+  const isBuy=type==='buy';
+  const memo={};
+  if(isBuy){
+    // 產業地位（select）
+    const posSel=document.getElementById(safeId+'-pos');
+    if(posSel){
+      const posVal=parseInt(posSel.value);
+      if(posVal>=0){
+        memo.position=posVal;
+        if(posVal===1){
+          const po=document.getElementById(safeId+'-pos-other');
+          if(po)memo.position_other=po.value||'';
+        }
+      }
+    }
+    // 來源
+    const srcSel=document.getElementById(safeId+'-src');
+    if(srcSel&&srcSel.value)memo.source=srcSel.value;
+    // 預計持有
+    const holdSel=document.getElementById(safeId+'-hold');
+    if(holdSel&&holdSel.value)memo.hold=holdSel.value;
+    // 目標價
+    const tgt=document.getElementById(safeId+'-target');
+    if(tgt&&tgt.value.trim())memo.target=tgt.value.trim();
+    // 看好原因
+    [['rs','reason_short'],['rm','reason_mid'],['rl','reason_long'],
+     ['catalyst','catalyst'],['risk','risk'],['monitor','monitor']].forEach(([f,k])=>{
+      const el=document.getElementById(safeId+'-'+f);
+      if(el&&el.value.trim())memo[k]=el.value.trim();
+    });
+  } else {
+    const sr=document.querySelector('input[name="'+safeId+'-sr"]:checked');
+    if(sr)memo.sell_reason=sr.value;
+    ['sell_note','review'].forEach(f=>{
+      const el=document.getElementById(safeId+'-'+f);
+      if(el&&el.value.trim())memo[f]=el.value.trim();
+    });
+  }
+  const hasContent=Object.keys(memo).length>0;
+  if(!hasContent){showToast('請至少填寫一個欄位',true);return;}
+  if(!state.stockMemos)state.stockMemos={};
+  if(!state.stockMemos[code])state.stockMemos[code]={};
+  state.stockMemos[code][key]=memo;
+  save();
+  showToast('✓ 備忘已儲存');
+  // 局部更新，保持展開狀態
+  renderStockMemos();
+  setTimeout(()=>{
+    const detail=document.getElementById(`smc-detail-${code}`);
+    const arrow=document.getElementById(`smc-arrow-${code}`);
+    if(detail){detail.style.display='block';}
+    if(arrow){arrow.style.transform='rotate(90deg)';}
+  },50);
+}
+
+function cancelMemoForm(type,code,key,gi){
+  const areaId=`${type}-memo-area-${code}-${gi}`;
+  const area=document.getElementById(areaId);
+  if(!area)return;
+  const existingMemo=(state.stockMemos[code]||{})[key]||null;
+  area.innerHTML=existingMemo
+    ?renderMemoCard(existingMemo,type,code,key,gi)
+    :renderMemoBtn(type,code,key,gi);
+}
+
+function deleteMemoV2(code,key,type,gi){
+  if(!state.stockMemos||!state.stockMemos[code])return;
+  delete state.stockMemos[code][key];
+  save();
+  showToast('✓ 備忘已刪除');
+  renderStockMemos();
+  setTimeout(()=>{
+    const detail=document.getElementById(`smc-detail-${code}`);
+    const arrow=document.getElementById(`smc-arrow-${code}`);
+    if(detail){detail.style.display='block';}
+    if(arrow){arrow.style.transform='rotate(90deg)';}
+  },50);
+}
+
+function setMemoFilter(mode,btn){
   window._memoFilter=mode;
   ['active','closed','all'].forEach(m=>{
-    const btn=document.getElementById('memo-filter-'+m);
-    if(!btn)return;
-    btn.style.background=m===mode?'var(--navy)':'';
-    btn.style.color=m===mode?'#fff':'';
-    btn.style.borderColor=m===mode?'var(--navy)':'';
+    const b=document.getElementById('memo-filter-'+m);
+    if(!b)return;
+    b.style.background=m===mode?'var(--navy)':'';
+    b.style.color=m===mode?'#fff':'';
+    b.style.borderColor=m===mode?'var(--navy)':'';
   });
   renderStockMemos();
 }
+
 
 
 function saveStockMemo2(el){
@@ -3892,4 +4520,53 @@ function setPrimaryTag(el,tid){
 }
 
 </script>
+<!-- 手機版底部導覽列 -->
+<nav id="mobile-nav">
+  <button class="mnav-btn active" id="mnav-dashboard" onclick="mobileNav('dashboard')">
+    <span class="mnav-ico">🏠</span>
+    <span>總覽</span>
+  </button>
+  <button class="mnav-btn" id="mnav-holdings-view" onclick="mobileNav('holdings-view')">
+    <span class="mnav-ico">📊</span>
+    <span>持倉</span>
+  </button>
+  <button class="mnav-btn" id="mnav-memo" onclick="mobileNav('memo')">
+    <span class="mnav-ico">📔</span>
+    <span>備忘錄</span>
+  </button>
+  <button class="mnav-btn" id="mnav-watch" onclick="mobileNav('watch')">
+    <span class="mnav-ico">👁</span>
+    <span>觀察名單</span>
+  </button>
+  <button class="mnav-btn" id="mnav-more" onclick="mobileNav('more')">
+    <span class="mnav-ico">⋯</span>
+    <span>更多</span>
+  </button>
+</nav>
+
+<!-- 手機版「更多」選單 -->
+<div id="mobile-more-menu" style="display:none;position:fixed;bottom:60px;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);z-index:499;padding:12px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.1)">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('chart')">
+      <span style="font-size:18px">📈</span>走勢圖
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('realized')">
+      <span style="font-size:18px">💰</span>已實現損益
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('history')">
+      <span style="font-size:18px">📅</span>歷史記錄
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('perf')">
+      <span style="font-size:18px">🎯</span>績效分析
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('netasset')">
+      <span style="font-size:18px">🏦</span>淨值明細
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('debts')">
+      <span style="font-size:18px">📋</span>資產負債
+    </button>
+  </div>
+  <button class="btn" style="width:100%;margin-top:8px;font-size:12px" onclick="document.getElementById('mobile-more-menu').style.display='none'">關閉</button>
+</div>
+
 </html>
