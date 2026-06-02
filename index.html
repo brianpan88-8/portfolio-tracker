@@ -191,6 +191,24 @@ tbody tr:hover{background:#FAFBFC}
 
 /* ===== 響應式手機版 ===== */
 @media (max-width: 768px) {
+  /* ===== 手機版暖色配色（浅驼/浅卡其，只覆蓋手機） ===== */
+  :root{
+    --bg:#EDE8DF!important;        /* 頁面底：淺卡其米 */
+    --sf:#FBF9F4!important;        /* 卡片：暖米白 */
+    --sf2:#F3EEE4!important;       /* 次層區塊 */
+    --sf3:#EAE3D6!important;
+    --tp:#3A332B!important;        /* 主文字：暖深褐 */
+    --ts:#6B6052!important;        /* 次文字 */
+    --tm:#8A7F6F!important;        /* 弱文字：暖灰褐 */
+    --bd:#DDD5C8!important;        /* 邊框：暖驼 */
+    --bdl:#E6DFD2!important;       /* 淺邊框 */
+    --red:#B5524A!important;       /* 漲：低飽和磚紅（偏暖） */
+    --green:#3F7D57!important;     /* 跌：低飽和綠 */
+    --navy:#A67C3D!important;      /* 品牌點綴改古銅金（選中態等） */
+    --blue:#9A6E32!important;
+  }
+  body{background:var(--bg)!important;}
+
   /* ===== 整體佈局 ===== */
   .layout{display:block!important;width:100%!important;}
   .sidebar{display:none!important;}
@@ -3667,7 +3685,7 @@ function mobileNav(page){
   if(more) more.style.display='none';
 
   // 更新底部導覽 active 狀態
-  const navPages = ['dashboard','holdings-view','memo','watch','more'];
+  const navPages = ['dashboard','history','chart','memo','more'];
   navPages.forEach(p=>{
     const btn = document.getElementById('mnav-'+p);
     if(btn) btn.classList.toggle('active', p===page);
@@ -4992,17 +5010,17 @@ function toggleTag(el,tid){
     <span class="mnav-ico">🏠</span>
     <span>總覽</span>
   </button>
-  <button class="mnav-btn" id="mnav-holdings-view" onclick="mobileNav('holdings-view')">
-    <span class="mnav-ico">📊</span>
-    <span>持倉</span>
+  <button class="mnav-btn" id="mnav-history" onclick="mobileNav('history')">
+    <span class="mnav-ico">📅</span>
+    <span>歷史紀錄</span>
+  </button>
+  <button class="mnav-btn" id="mnav-chart" onclick="mobileNav('chart')">
+    <span class="mnav-ico">📈</span>
+    <span>走勢圖</span>
   </button>
   <button class="mnav-btn" id="mnav-memo" onclick="mobileNav('memo')">
     <span class="mnav-ico">📔</span>
     <span>備忘錄</span>
-  </button>
-  <button class="mnav-btn" id="mnav-watch" onclick="mobileNav('watch')">
-    <span class="mnav-ico">👁</span>
-    <span>觀察名單</span>
   </button>
   <button class="mnav-btn" id="mnav-more" onclick="mobileNav('more')">
     <span class="mnav-ico">⋯</span>
@@ -5013,14 +5031,23 @@ function toggleTag(el,tid){
 <!-- 手機版「更多」選單 -->
 <div id="mobile-more-menu" style="display:none;position:fixed;bottom:60px;left:0;right:0;background:var(--sf);border-top:1px solid var(--bd);z-index:499;padding:12px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.1)">
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('chart')">
-      <span style="font-size:18px">📈</span>走勢圖
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('input')">
+      <span style="font-size:18px">➕</span>輸入收盤價
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('trades')">
+      <span style="font-size:18px">↔️</span>交易記錄
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('holdings-view')">
+      <span style="font-size:18px">📊</span>持倉概況
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('watch')">
+      <span style="font-size:18px">👁</span>觀察名單
+    </button>
+    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('weight')">
+      <span style="font-size:18px">🥧</span>持倉比重
     </button>
     <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('realized')">
       <span style="font-size:18px">💰</span>已實現損益
-    </button>
-    <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('history')">
-      <span style="font-size:18px">📅</span>歷史記錄
     </button>
     <button class="btn" style="padding:10px 6px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="mobileNav('perf')">
       <span style="font-size:18px">🎯</span>績效分析
