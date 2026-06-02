@@ -261,6 +261,10 @@ tbody tr:hover{background:#FAFBFC}
   #d-tbl{display:none!important;}
   #d-mobile-cards{display:block!important;}
 
+  /* ===== 歷史記錄：隱藏桌機表格，顯示卡片 ===== */
+  #hist-tbl{display:none!important;}
+  #hist-mobile-cards{display:block!important;}
+
   /* ===== 備忘錄頁籤：橫向可滑 ===== */
   #page-memo > div[style*="border-bottom"]{
     overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;
@@ -500,7 +504,8 @@ tbody tr:hover{background:#FAFBFC}
 <!-- HISTORY -->
 <div id="page-history" class="page">
   <div class="ph"><div class="pt">歷史記錄</div></div>
-  <div class="twrap"><table>
+  <div id="hist-mobile-cards" style="display:none"></div>
+  <div class="twrap" id="hist-tbl"><table>
     <thead><tr>
       <th class="tl">日期</th><th>加權指數</th><th>指數漲跌</th>
       <th>持股總市值</th><th>當日市值±</th><th>當日損益%</th>
@@ -1882,7 +1887,42 @@ function saveDay(){
 }
 
 // ===== HISTORY =====
+let histMobileLimit=30;
+function renderHistMobile(){
+  const tbl=document.getElementById('hist-tbl');
+  const cont=document.getElementById('hist-mobile-cards');
+  if(tbl)tbl.style.display='none';
+  if(!cont)return;
+  cont.style.display='block';
+  const dates=allDates().reverse();
+  if(!dates.length){cont.innerHTML='<div class="nodata">尚無記錄</div>';return;}
+  const shown=dates.slice(0,histMobileLimit);
+  cont.innerHTML=shown.map(d=>{
+    const data=computeDay(d);if(!data)return '';
+    const hasMemo=data.day.memo&&(data.day.memo.market||data.day.memo.trade||data.day.memo.other);
+    const txCol=(data.txChg||0)>=0?'var(--red)':'var(--green)';
+    const pnlCol=(data.dmvChg||0)>=0?'var(--red)':'var(--green)';
+    return `<div onclick="viewDay('${d}')" style="background:var(--sf);border:1px solid var(--bdl);border-radius:11px;padding:13px 15px;margin-bottom:8px;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:700;font-family:var(--mono)">${d}</span>
+        <span style="font-size:11px;color:var(--tm)">${hasMemo?'📝 ':''}加權 ${data.taiex?fn(data.taiex,2):'—'} <span style="color:${txCol}">${data.txChg!==null?fc(data.txChg,0):''}</span></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--bdl)">
+        <div style="font-size:12px;color:var(--tm)">持股總市值<br><span style="font-size:14px;color:var(--tp);font-weight:600;font-family:var(--mono)">$${fn(data.totalMv,0)}</span></div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--tm)">當日損益</div>
+          <div style="font-size:14px;font-weight:700;color:${pnlCol};font-family:var(--mono)">${data.dmvChg!==null?fc(data.dmvChg,0):'—'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if(dates.length>histMobileLimit){
+    cont.innerHTML+=`<button class="btn" style="width:100%;margin-top:4px;padding:12px" onclick="histMobileLimit+=30;renderHistMobile()">載入更多（剩 ${dates.length-histMobileLimit} 天）</button>`;
+  }
+}
+
 function renderHist(){
+  if(isMobile()){renderHistMobile();return;}
   const tbody=document.getElementById('hist-tbody');
   const dates=allDates().reverse();tbody.innerHTML='';
   if(!dates.length){tbody.innerHTML='<tr><td colspan="9" class="nodata">尚無記錄</td></tr>';return;}
