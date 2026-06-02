@@ -191,96 +191,99 @@ tbody tr:hover{background:#FAFBFC}
 
 /* ===== 響應式手機版 ===== */
 @media (max-width: 768px) {
-  /* 整體佈局 - 覆蓋 grid */
-  .layout{
-    display:block!important;
-    width:100%!important;
-  }
-  .sidebar{
-    display:none!important;
-  }
+  /* ===== 整體佈局 ===== */
+  .layout{display:block!important;width:100%!important;}
+  .sidebar{display:none!important;}
   .main{
-    display:block!important;
-    width:100%!important;
-    min-width:0!important;
-    padding:16px 14px 80px!important;
-    box-sizing:border-box!important;
-    overflow-x:hidden!important;
+    display:block!important;width:100%!important;min-width:0!important;
+    padding:14px 12px 78px!important;box-sizing:border-box!important;overflow-x:hidden!important;
   }
 
-  /* 頁面標題 */
-  .ph{margin-bottom:12px;}
-  .pt{font-size:17px!important;}
+  /* ===== 頁面標題 ===== */
+  .ph{margin-bottom:12px!important;}
+  .pt{font-size:18px!important;}
+  .ps{font-size:12px!important;}
 
-  /* 卡片格線 */
-  .cg4,.cg3{
-    grid-template-columns:1fr 1fr!important;
-    gap:8px!important;
+  /* ===== 日期導覽列：橫向可滑，不折行 ===== */
+  .dbar{
+    display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;gap:6px!important;
+    padding:0 0 10px!important;scrollbar-width:none!important;
   }
-  .card{padding:12px!important;}
-  .cval{font-size:14px!important;}
+  .dbar::-webkit-scrollbar{display:none!important;}
+  .dbar > *{
+    font-size:12px!important;padding:7px 11px!important;
+    white-space:nowrap!important;flex-shrink:0!important;
+  }
+
+  /* ===== 大盤資訊列：3欄網格，標籤在上數字在下，絕不錯亂 ===== */
+  .mbar{
+    display:grid!important;grid-template-columns:1fr 1fr 1fr!important;
+    gap:12px 8px!important;padding:14px!important;margin-bottom:14px!important;
+    align-items:start!important;
+  }
+  .mbar .msep{display:none!important;}
+  .mbar .mi{
+    display:flex!important;flex-direction:column!important;gap:3px!important;
+    align-items:flex-start!important;min-width:0!important;
+  }
+  .mbar .mlbl{font-size:10px!important;}
+  .mbar .mval{font-size:14px!important;}
+
+  /* ===== 今日總覽四張主卡：2×2 ===== */
+  .cg4,.cg3{grid-template-columns:1fr 1fr!important;gap:8px!important;}
+  .card{padding:13px!important;}
+  .cval{font-size:15px!important;}
   .clbl{font-size:11px!important;}
 
-  /* 表格 */
-  .twrap{overflow-x:auto!important;}
+  /* 投資帳戶資產總值橫幅：直排 */
+  #d-natog,.na-banner{font-size:13px!important;}
 
-  /* 日期導覽列 */
-  .dbar{
-    display:flex!important;
-    flex-wrap:wrap!important;
-    gap:6px!important;
-    padding:0 0 12px!important;
-  }
-  .dbar > *{
-    font-size:12px!important;
-    padding:6px 10px!important;
-    white-space:nowrap!important;
-  }
+  /* ===== 個股明細：隱藏桌機表格，顯示卡片 ===== */
+  #d-tbl{display:none!important;}
+  #d-mobile-cards{display:block!important;}
 
-  /* 大盤資訊列 */
-  .mbar{
-    flex-wrap:wrap!important;
-    gap:4px 14px!important;
-    padding:10px 0!important;
-  }
-  .mbar > div{font-size:12px!important;}
-
-  /* 備忘錄頁籤 */
-  .memo-tab{
-    white-space:nowrap!important;
-    flex-shrink:0!important;
-    padding:8px 11px!important;
-    font-size:12px!important;
-  }
+  /* ===== 備忘錄頁籤：橫向可滑 ===== */
   #page-memo > div[style*="border-bottom"]{
-    overflow-x:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-    flex-wrap:nowrap!important;
+    overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;
+    flex-wrap:nowrap!important;scrollbar-width:none!important;
+  }
+  #page-memo > div[style*="border-bottom"]::-webkit-scrollbar{display:none!important;}
+  .memo-tab{
+    white-space:nowrap!important;flex-shrink:0!important;
+    padding:9px 12px!important;font-size:13px!important;
   }
 
-  /* 表單 */
+  /* ===== 核心原則：篩選列橫向滑，標題列精簡 ===== */
+  #page-memo [id="principle-list"] ~ *,
+  .principle-filter,.principle-level{flex-shrink:0!important;white-space:nowrap!important;}
+  /* 篩選兩列容器橫滑 */
+  #principle-panel-filters-wrap{
+    overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;
+    scrollbar-width:none!important;
+  }
+  #principle-panel-filters-wrap::-webkit-scrollbar{display:none!important;}
+
+  /* ===== inline 多欄並排 → 手機單欄 ===== */
+  .main [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important;}
+  .main [style*="grid-template-columns:1fr 1fr 1fr 1fr"]{grid-template-columns:1fr 1fr!important;}
+  .main [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;}
+
+  /* ===== 表單 ===== */
   .frow{flex-wrap:wrap!important;gap:8px!important;}
   .fg{min-width:120px!important;}
-  .fsec{padding:12px!important;}
+  .fsec{padding:13px!important;}
 
-  /* 走勢圖 */
+  /* ===== 走勢圖/淨值 ===== */
   .cwrap{margin-bottom:14px!important;}
-
-  /* 底部導覽列顯示 */
-  #mobile-nav{display:flex!important;}
-
-  /* 持股淨值組成 */
   .nap{margin:0 0 12px!important;}
+  .natot{font-size:15px!important;}
 
-  /* 大型數字縮小 */
-  .natot{font-size:14px!important;}
-
-  /* inline 多欄並排在手機改單欄（核心原則、個股備忘表單等） */
-  .main [style*="1fr 1fr"]{grid-template-columns:1fr!important;}
-  .main [style*="1fr 1fr 1fr 1fr"]{grid-template-columns:1fr 1fr!important;}
-
-  /* 個股備忘卡片內距與字級 */
+  /* ===== 個股備忘清單 ===== */
   #memo-stock-list{padding:0!important;}
+
+  /* ===== 底部導覽列 ===== */
+  #mobile-nav{display:flex!important;}
 }
 
 /* 底部導覽列 */
@@ -966,6 +969,7 @@ tbody tr:hover{background:#FAFBFC}
         <button class="btn btn-p" onclick="savePrinciple()">新增</button>
       </div>
     </div>
+    <div id="principle-panel-filters-wrap">
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
       <span style="font-size:11px;color:var(--tm);font-weight:600;margin-right:2px">分類</span>
       <button class="btn btn-sm principle-filter active" data-cat="all" onclick="filterPrinciple('all',this)">全部</button>
@@ -990,6 +994,7 @@ tbody tr:hover{background:#FAFBFC}
         <option value="review">最久沒複習</option>
         <option value="created">依建立時間</option>
       </select>
+    </div>
     </div>
     <div id="principle-list"></div>
   </div>
@@ -1260,13 +1265,7 @@ function sp(p){
       const b=document.getElementById('mnav-'+m);
       if(b)b.classList.toggle('active',m===mPage);
     });
-    // 手機版顯示卡片，隱藏表格
-    const mCards=document.getElementById('d-mobile-cards');
-    const mTbl=document.getElementById('d-tbl-wrap');
-    if(mCards&&mTbl){
-      if(p==='dashboard'){mCards.style.display='block';mTbl.style.display='none';}
-      else{mCards.style.display='none';mTbl.style.display='';}
-    }
+    // 手機版個股明細顯示交由 CSS media query 控制
   }
   document.querySelectorAll('.nav-btn').forEach(e=>{if(e.getAttribute('onclick')&&e.getAttribute('onclick').includes("'"+p+"'"))e.classList.add('active');});
   if(p==='dashboard')renderDash();
@@ -1493,7 +1492,6 @@ function renderMobileStockCards(data){
   const container = document.getElementById('d-mobile-cards');
   if(!container) return;
   container.style.display='block';
-  // 同 code+type 合併
   const groups={};
   data.stocks.forEach(st=>{const k=st.code+'_'+st.type;(groups[k]=groups[k]||[]).push(st);});
   const merged=Object.values(groups).map(a=>mergeStocks(a)).filter(s=>s.mv!==null&&s.mv>0).sort((a,b)=>b.mv-a.mv);
@@ -1503,29 +1501,43 @@ function renderMobileStockCards(data){
     const pnlColor = (s.pnl||0)>=0?'var(--red)':'var(--green)';
     const chgColor = (s.dayChg||0)>=0?'var(--red)':'var(--green)';
     const pct = data.totalMv>0?(s.mv/data.totalMv*100).toFixed(1):'0.0';
-    const tl = s.type==='margin'?'<span style="font-size:10px;background:#fef0e0;color:#c77;padding:1px 5px;border-radius:3px">融資</span>':s.type==='short'?'<span style="font-size:10px;background:#e0eefe;color:#77c;padding:1px 5px;border-radius:3px">融券</span>':'';
+    const tl = s.type==='margin'?'<span style="font-size:10px;background:#fef0e0;color:#c77;padding:1px 6px;border-radius:4px">融資</span>':s.type==='short'?'<span style="font-size:10px;background:#e0eefe;color:#77c;padding:1px 6px;border-radius:4px">融券</span>':'';
+    const primTag = getPrimaryTagPill(s.tags||[]);
     const avgCost = s.qty>0?s.tc/s.qty/1000:0;
-    return `<div style="background:var(--sf);border:1px solid var(--bdl);border-radius:10px;padding:13px 14px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:14px;font-weight:700">${s.name}</span>
-          <span style="font-size:11px;color:var(--tm);font-family:var(--mono)">${s.code}</span>
-          ${tl}
-          <span style="font-size:10px;background:var(--sf3);padding:1px 5px;border-radius:3px;color:var(--tm)">${pct}%</span>
+    const tgt = s.memoTarget!=null?('目標 $'+fn(s.memoTarget,0)):'';
+    return `<div style="background:var(--sf);border:1px solid var(--bdl);border-radius:11px;padding:14px;margin-bottom:9px">
+      <!-- 第一行：股名 + 當日漲跌（最重要，一眼看漲跌） -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px">
+        <div style="min-width:0;flex:1">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+            <span style="font-size:15px;font-weight:700">${s.name}</span>
+            <span style="font-size:11px;color:var(--tm);font-family:var(--mono)">${s.code}</span>
+            ${tl}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${primTag||''}
+            <span style="font-size:11px;color:var(--tm)">${pct}% 持股</span>
+          </div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:14px;font-weight:700;font-family:var(--mono)">${s.price!=null?'$'+fn(s.price,2):'—'}</div>
-          <div style="font-size:11px;color:${chgColor}">${(s.dayChg||0)>=0?'+':''}${fn(s.dayChg||0,2)} (${(s.dayPct||0)>=0?'+':''}${fn(s.dayPct||0,2)}%)</div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${chgColor}">${s.price!=null?fn(s.price,2):'—'}</div>
+          <div style="font-size:12px;color:${chgColor};font-weight:600">${(s.dayChg||0)>=0?'▲':'▼'}${fn(Math.abs(s.dayChg||0),2)} (${(s.dayPct||0)>=0?'+':''}${fn(s.dayPct||0,2)}%)</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
-        <span style="color:var(--tm)">${s.qty}張 · @$${fn(avgCost,2)} · $${fn(s.mv/10000,0)}萬</span>
-        <span style="font-weight:600;color:${pnlColor}">${(s.pnl||0)>=0?'+':''}$${fn(s.pnl||0,0)}</span>
+      <!-- 第二行：張數 市值 / 未實現損益（細節可達） -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:9px;border-top:1px solid var(--bdl)">
+        <div style="font-size:12px;color:var(--tm)">
+          ${s.qty}張 · 均價 $${fn(avgCost,2)}<br>
+          市值 $${fn(s.mv/10000,0)}萬${tgt?' · '+tgt:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:${pnlColor}">${(s.pnl||0)>=0?'+':''}$${fn(s.pnl||0,0)}</div>
+          <div style="font-size:11px;color:${pnlColor}">${(s.pnlPct||0)>=0?'+':''}${fn(s.pnlPct||0,1)}%</div>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
-
 function mergeStocks(arr){
   if(arr.length===1)return arr[0];
   const first=arr[0];
