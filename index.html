@@ -984,13 +984,17 @@ tbody tr:hover{background:#FAFBFC}
   <!-- ② 期間損益（主視覺：結論先講） -->
   <div id="pf-pnl-summary" style="margin-bottom:14px"></div>
 
-  <!-- ③ 累積損益曲線 -->
+  <!-- ③ 投資報酬率 vs 大盤 -->
   <div class="cwrap" style="margin-bottom:14px">
-    <div class="ctitle">累積損益曲線</div>
-    <div class="legend" id="pf-curve-legend">
-      <div class="leg-item"><div class="leg-dot" style="background:#7d9fb5"></div>累積損益</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#a3899c"></div>大盤同期漲跌幅對比</div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div class="ctitle" style="margin-bottom:0">投資報酬率 vs 大盤</div>
+      <div id="pf-curve-info" style="font-size:12px;font-family:var(--mono);color:var(--ts)"></div>
     </div>
+    <div class="legend" id="pf-curve-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#7d9fb5"></div>我的累積報酬率</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#a3899c"></div>大盤同期漲跌幅</div>
+    </div>
+    <div id="pf-curve-note" style="font-size:10.5px;color:var(--tm);margin:2px 0 6px"></div>
     <div style="position:relative;height:220px"><canvas id="ch-pf-curve"></canvas></div>
   </div>
 
@@ -3464,28 +3468,22 @@ function buildPnlCurve(fromDate, toDate){
   const queues={};
   let basePnl=0;
 
+  // 只跑「期間開始之前」的交易，得到期初的 FIFO 佇列狀態與期初累積已實現。
+  // 注意：期間內的交易一律留給下方第二段處理，若在此先跑過，
+  // 佇列會被消耗到「全期結束」的狀態，第二段再重新推入期間買進時
+  // 就會用錯誤的批次配對，導致已實現損益虛增。
   for(const t of [...state.trades].sort((a,b)=>a.date.localeCompare(b.date))){
-    if(t._directPnl!==undefined){
-      if(!fromDate||t.date<fromDate)basePnl+=t._directPnl;
-      continue;
-    }
+    if(fromDate&&t.date>=fromDate)continue;
+    if(t._directPnl!==undefined){basePnl+=t._directPnl;continue;}
     const key=t.code+'|'+(t.type.includes('margin')?'m':'s');
     if(!queues[key])queues[key]=[];
     if(typeB(t)){
       queues[key].push({qty:t.qty,price:t.price});
-    } else if(typeS(t)&&(!fromDate||t.date<fromDate)){
+    } else if(typeS(t)){
       let rem=t.qty;
       while(rem>0.001&&queues[key].length){
         const o=queues[key][0];const m=Math.min(rem,o.qty);
         basePnl+=(t.price-o.price)*m*1000;
-        o.qty-=m;rem-=m;
-        if(o.qty<=0.001)queues[key].shift();
-      }
-    } else if(typeS(t)&&fromDate&&t.date>=fromDate){
-      // 期間內的賣出，要繼續 FIFO 但不加到 basePnl（後面逐日算）
-      let rem=t.qty;
-      while(rem>0.001&&queues[key].length){
-        const o=queues[key][0];const m=Math.min(rem,o.qty);
         o.qty-=m;rem-=m;
         if(o.qty<=0.001)queues[key].shift();
       }
@@ -3704,19 +3702,56 @@ function renderPerf(){
   destroyChart('pfcurve');
   const canvas=document.getElementById('ch-pf-curve');
   if(canvas){
+    // 兩條線都從期間起點的 0 出發，形狀才能直接對比
+    const base0=curve.length?curve[0]:0;
+    const curveR=curve.map(v=>v==null?null:v-base0);
+    // 大盤：以期間內第一個有指數的交易日為基準（首日可能沒填指數）
+    let tb=-1;
+    for(let i=0;i<dates.length;i++){const t=state.days[dates[i]]&&state.days[dates[i]].taiex;if(t){tb=i;break;}}
+    const txBase=tb>=0?state.days[dates[tb]].taiex:null;
+    const taiexR=dates.map((d,i)=>{
+      const t=state.days[d]&&state.days[d].taiex;
+      return (i<tb||!t||!txBase)?null:(t-txBase)/txBase*100;
+    });
+    // 讀數：期間損益、對平均持股成本的報酬率、大盤、超額
+    const pnlAmt=curveR.length?curveR[curveR.length-1]:0;
+    let costSum=0,costN=0;
+    dates.forEach(d=>{const cd=computeDay(d);if(cd&&cd.totalCost>0){costSum+=cd.totalCost;costN++;}});
+    const costAvg=costN?costSum/costN:0;
+    const myPct=costAvg>0?pnlAmt/costAvg*100:null;
+    const txPct=taiexR.length?taiexR[taiexR.length-1]:null;
+    const info=document.getElementById('pf-curve-info');
+    if(info){
+      info.innerHTML=(myPct!=null&&txPct!=null)
+        ? `期間損益 <b class="${cc(pnlAmt)}">${pnlAmt>=0?'+':'-'}$${fn(Math.abs(pnlAmt),0)}</b>
+           　報酬率 <b class="${cc(myPct)}">${fp(myPct,1)}</b>
+           　大盤 <b class="${cc(txPct)}">${fp(txPct,1)}</b>
+           　超額 <b class="${cc(myPct-txPct)}">${fp(myPct-txPct,1)}</b>`
+        : `期間損益 <b class="${cc(pnlAmt)}">${pnlAmt>=0?'+':'-'}$${fn(Math.abs(pnlAmt),0)}</b>`;
+    }
+    const note=document.getElementById('pf-curve-note');
+    if(note)note.textContent=costAvg>0
+      ?`純買賣績效，不受出入金影響。報酬率分母為期間平均持股成本 $${fn(costAvg,0)}（非期初成本，避免部位放大時高估）`
+      :'純買賣績效，不受出入金影響。';
     const gradPf=dGrad(canvas,130,196,160,0.18,0);
+    // 兩條線都換算成「相對期初的報酬率 %」，共用同一座標軸，
+    // 才能保證同起點（雙軸各自縮放時，兩個 0 不會落在同一個高度）
+    const curvePct=curveR.map(v=>(v==null||!(costAvg>0))?null:v/costAvg*100);
     const opts=dChartOpts(
-      v=>{if(v==null)return'';if(Math.abs(v)>=10000)return(v>=0?'+':'')+Math.round(v/10000)+'萬';return(v>=0?'+':'')+fn(v,0);},
-      ctx=>ctx.datasetIndex===0?' 累積損益  '+(ctx.raw>=0?'+':'')+fn(ctx.raw,0):' 大盤漲跌  '+(ctx.raw>=0?'+':'')+fp(ctx.raw,2)+'%'
+      v=>v==null?'':(v>0?'+':'')+v.toFixed(0)+'%',
+      ctx=>{
+        if(ctx.datasetIndex===0){
+          const amt=curveR[ctx.dataIndex];
+          return' 累積損益  '+fp(ctx.raw,1)+'　'+(amt>=0?'+':'-')+'$'+fn(Math.abs(amt),0);
+        }
+        return' 大盤漲跌  '+fp(ctx.raw,1);
+      }
     );
-    // 右軸給大盤%
-    opts.scales.y2={type:'linear',position:'right',grid:{display:false},border:{display:false},
-      ticks:{callback:v=>(v>=0?'+':'')+v.toFixed(1)+'%',font:{size:10,family:'Roboto Mono'},color:CC.bench,maxTicksLimit:5,padding:6}};
     charts.pfcurve=mkChart('ch-pf-curve',{type:'line',data:{labels:dates,datasets:[
-      {label:'累積損益',data:curve,borderColor:CC.asset,backgroundColor:gradPf,
-       borderWidth:2.5,pointRadius:0,pointHoverRadius:4,fill:true,tension:0.4,yAxisID:'y'},
-      {label:'大盤漲跌',data:taiex,borderColor:CC.bench,backgroundColor:'transparent',
-       borderWidth:1.5,pointRadius:0,pointHoverRadius:4,fill:false,tension:0.4,borderDash:[4,3],yAxisID:'y2'}
+      {label:'累積損益',data:curvePct,borderColor:CC.asset,backgroundColor:gradPf,
+       borderWidth:2.5,pointRadius:0,pointHoverRadius:4,fill:true,tension:0.4},
+      {label:'大盤漲跌',data:taiexR,borderColor:CC.bench,backgroundColor:'transparent',
+       borderWidth:1.5,pointRadius:0,pointHoverRadius:4,fill:false,tension:0.4,borderDash:[4,3]}
     ]},options:opts});
   }
 
