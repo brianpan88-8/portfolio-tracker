@@ -257,6 +257,34 @@ tbody tr:hover{background:#FAFBFC}
   /* 投資帳戶資產總值橫幅：直排 */
   #d-natog,.na-banner{font-size:13px!important;}
 
+  /* ===== 輸入收盤價：手機卡片化 ===== */
+  .inp-hdr{display:none!important;}
+  .inp-row{
+    display:flex!important;align-items:center!important;gap:8px!important;
+    background:var(--sf)!important;border:1px solid var(--bdl)!important;
+    border-radius:10px!important;padding:11px 12px!important;margin-bottom:8px!important;
+    flex-wrap:wrap!important;
+  }
+  .inp-code{font-size:12px!important;color:var(--tm)!important;order:2!important;}
+  .inp-name{font-size:15px!important;font-weight:700!important;color:var(--tp)!important;order:1!important;}
+  .inp-badge{order:3!important;}
+  .inp-input-wrap{
+    order:4!important;flex:1 1 100%!important;
+    display:flex!important;align-items:center!important;gap:10px!important;margin-top:4px!important;
+  }
+  .inp-price{
+    max-width:none!important;flex:1!important;
+    padding:12px 12px!important;font-size:17px!important;
+    border-radius:9px!important;text-align:right!important;
+  }
+  .inp-prev{font-size:12px!important;}
+  .inp-mkt{grid-template-columns:1fr!important;max-width:none!important;}
+  /* 大盤資料輸入框加大 */
+  #i-area .fsec input[type="number"]{padding:12px 12px!important;font-size:17px!important;}
+  #i-date{padding:11px 12px!important;font-size:15px!important;}
+  /* 儲存按鈕放大好按 */
+  #page-input .btn-p{width:100%!important;padding:15px!important;font-size:16px!important;margin-top:4px!important;}
+
   /* ===== 個股明細：隱藏桌機表格，顯示卡片 ===== */
   #d-tbl{display:none!important;}
   #d-mobile-cards{display:block!important;}
@@ -372,6 +400,17 @@ tbody tr:hover{background:#FAFBFC}
   .hist-row-desktop{display:grid!important;}
   .hist-row-mobile{display:none!important;}
 }
+
+/* ===== 輸入收盤價：個股列（桌機） ===== */
+.inp-hdr{display:grid;grid-template-columns:80px 130px 54px 1fr;gap:9px;margin-bottom:7px}
+.inp-hdr span{font-size:11px;font-weight:700;color:var(--tm)}
+.inp-row{display:grid;grid-template-columns:80px 130px 54px 1fr;gap:9px;margin-bottom:9px;align-items:center}
+.inp-code{font-family:var(--mono);font-size:13px;font-weight:500}
+.inp-name{font-size:13px;color:var(--ts)}
+.inp-badge{font-size:10px}
+.inp-input-wrap{display:flex;align-items:center;gap:8px;min-width:0}
+.inp-price{padding:7px 9px;border:1px solid var(--bd);border-radius:6px;font-family:var(--mono);font-size:13px;background:var(--sf);color:var(--tp);max-width:150px;width:100%}
+.inp-prev{font-size:11px;color:var(--tm);white-space:nowrap}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -482,16 +521,18 @@ tbody tr:hover{background:#FAFBFC}
       <input type="date" id="i-date" 
         style="padding:7px 9px;border:1px solid var(--bd);border-radius:6px;font-family:var(--mono);font-size:13px;background:var(--sf);color:var(--tp)"
         onchange="loadInp()">
+      <button class="btn btn-sm" onclick="inpToday()">今天</button>
       <span id="i-status" style="font-size:12px;color:var(--tm)"></span>
     </div>
   </div>
   <div id="i-area" style="display:none">
     <div class="fsec">
       <div class="fstitle">大盤資料</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:11px;max-width:360px">
-        <div class="fg"><label>加權指數收盤</label><input type="number" id="i-tx" placeholder="20000" step=".01"></div>
-        <div class="fg"><label>成交量（億元）</label><input type="number" id="i-vol" placeholder="3500" step=".1"></div>
+      <div class="inp-mkt" style="display:grid;grid-template-columns:repeat(2,1fr);gap:11px;max-width:360px">
+        <div class="fg"><label>加權指數收盤</label><input type="number" inputmode="decimal" id="i-tx" placeholder="20000" step=".01"></div>
+        <div class="fg"><label>成交量（億元）</label><input type="number" inputmode="decimal" id="i-vol" placeholder="3500" step=".1"></div>
       </div>
+      <div id="i-prev-tx" style="font-size:11px;color:var(--tm);margin-top:8px"></div>
     </div>
     <div class="fsec">
       <div class="fstitle">個股收盤價</div>
@@ -1862,6 +1903,11 @@ function initInp(){
   document.getElementById('i-status').textContent='';
   loadInp(); // 自動載入當日資料
 }
+function inpToday(){
+  const el=document.getElementById('i-date');
+  if(el){el.value=todayStr();loadInp();}
+}
+
 function loadInp(){
   const ds=document.getElementById('i-date').value;if(!ds)return;
   if(!state.holdings.length){document.getElementById('i-noh').style.display='';document.getElementById('i-area').style.display='none';return;}
@@ -1871,24 +1917,37 @@ function loadInp(){
   document.getElementById('i-tx').value=ex.taiex||'';
   document.getElementById('i-vol').value=ex.volume||'';
 
+  // 前一交易日資料（當參考值）
+  const ads=allDates();
+  const pi=ads.indexOf(ds);
+  const prevDate=pi>0?ads[pi-1]:(ads.length&&ads[ads.length-1]<ds?ads[ads.length-1]:null);
+  const prev=prevDate?state.days[prevDate]:null;
+  const ptxEl=document.getElementById('i-prev-tx');
+  if(ptxEl)ptxEl.textContent=prev&&prev.taiex?('前次 '+prevDate+'：加權 '+fn(prev.taiex,2)+(prev.volume?'　量 '+fn(prev.volume,0)+' 億':'')):'';
+
   const container=document.getElementById('i-srows');container.innerHTML='';
-  // group by code for display (only one price input per code)
-  const inputDate=document.getElementById('i-date').value||todayStr();
+  const inputDate=ds;
   const seen=new Set();
   const hdr=document.createElement('div');
-  hdr.style.cssText='display:grid;grid-template-columns:80px 120px 50px 1fr;gap:9px;margin-bottom:7px';
-  hdr.innerHTML='<span style="font-size:11px;font-weight:700;color:var(--tm)">代號</span><span style="font-size:11px;font-weight:700;color:var(--tm)">名稱</span><span style="font-size:11px;font-weight:700;color:var(--tm)">類型</span><span style="font-size:11px;font-weight:700;color:var(--tm)">收盤價（元）</span>';
+  hdr.className='inp-hdr';
+  hdr.innerHTML='<span>代號</span><span>名稱</span><span>類型</span><span>收盤價（元）</span>';
   container.appendChild(hdr);
   state.holdings.filter(h=>isHoldingActive(h,inputDate)).forEach(h=>{
     if(seen.has(h.code))return;seen.add(h.code);
     const row=document.createElement('div');
-    row.style.cssText='display:grid;grid-template-columns:80px 120px 50px 1fr;gap:9px;margin-bottom:9px;align-items:center';
+    row.className='inp-row';
     const ep=ex.prices&&ex.prices[h.uid]!=null?ex.prices[h.uid]:'';
-    row.innerHTML=`<span style="font-family:var(--mono);font-size:13px;font-weight:500">${h.code}</span>
-      <span style="font-size:13px;color:var(--ts)">${h.name}</span>
-      <span class="badge ${h.type==='margin'?'b-margin':h.type==='short'?'b-short':'b-stock'}" style="font-size:10px">${h.type==='margin'?'融資':h.type==='short'?'融券':'現股'}</span>
-      <input type="number" id="pr-${h.code}" value="${ep}" placeholder="收盤價" step=".01"
-        style="padding:7px 9px;border:1px solid var(--bd);border-radius:6px;font-family:var(--mono);font-size:13px;background:var(--sf);color:var(--tp);max-width:180px">`;
+    // 前一日該檔收盤價（同代號任一批）
+    let pp=null;
+    if(prev&&prev.prices){
+      const sib=state.holdings.find(x=>x.code===h.code&&prev.prices[x.uid]!=null);
+      if(sib)pp=prev.prices[sib.uid];
+    }
+    row.innerHTML=`<span class="inp-code">${h.code}</span>
+      <span class="inp-name">${h.name}</span>
+      <span class="badge ${h.type==='margin'?'b-margin':h.type==='short'?'b-short':'b-stock'} inp-badge">${h.type==='margin'?'融資':h.type==='short'?'融券':'現股'}</span>
+      <span class="inp-input-wrap"><input type="number" inputmode="decimal" id="pr-${h.code}" value="${ep}" placeholder="${pp!=null?fn(pp,2):'收盤價'}" step=".01"
+        class="inp-price">${pp!=null?`<span class="inp-prev">前收 ${fn(pp,2)}</span>`:''}</span>`;
     container.appendChild(row);
   });
   const st=document.getElementById('i-status');
@@ -2566,6 +2625,10 @@ function addHolding(){
   const qty=parseInt(document.getElementById('h-qty').value);
   const cost=parseFloat(document.getElementById('h-cost').value);
   if(!code||!name||isNaN(qty)||isNaN(cost)){alert('請填寫完整資料');return;}
+  // 防呆：偵測張數與均價疑似填反（張數遠大於均價、且均價偏低）
+  if(qty>100&&cost<20&&qty>cost*5){
+    if(!confirm('張數 '+qty+' 張、均價 '+cost+' 元，看起來可能填反了。\n確定要這樣新增嗎？'))return;
+  }
   const h={uid:genUid(),code,name,batch,type,isEtf,qty,cost,tags:[]};
   if(type==='margin'){h.marginPct=getMPct();h.marginBal=parseFloat(document.getElementById('h-mbal').value)||0;}
   if(type==='short')h.shortPct=getSPct();
@@ -3516,7 +3579,7 @@ function syncTradeToHolding(trade){
     const sib=state.holdings.find(x=>x.code===trade.code);
     const h={uid:genUid(),code:trade.code,name:trade.name,batch:'',type:htype,
       isEtf:sib?(sib.isEtf||false):false,qty:trade.qty,cost:trade.price,
-      startDate:trade.date,endDate:null,tags:sib?[...(sib.tags||[])]:[]};
+      startDate:trade.date,endDate:null,tags:sib?[...(sib.tags||[])]:[],_srcTrade:trade.id};
     if(htype==='margin'){h.marginPct=0.6;h.marginBal=amt*0.6;}
     if(htype==='short')h.shortPct=0.9;
     state.holdings.push(h);
@@ -3642,10 +3705,30 @@ function renderTrades(){
 }
 
 function confirmDelTrade(id){
-  document.getElementById('del-msg').textContent='確定刪除這筆交易記錄？此操作不可復原。';
+  const tr=(state.trades||[]).find(t=>t.id===id);
+  // 找這筆交易連動建立的買進持倉（未被賣出動過：仍 active 且張數未變）
+  const linked=tr?state.holdings.filter(h=>h._srcTrade===id):[];
+  const isBuy=tr&&['buy','margin_buy','short_sell'].includes(tr.type);
+  let msg='確定刪除這筆交易記錄？此操作不可復原。';
+  if(isBuy&&linked.length){
+    msg='這筆是買進交易，刪除時會一併移除它建立的持倉（'+tr.name+' '+linked.reduce((s,h)=>s+h.qty,0)+' 張）。確定刪除？';
+  } else if(tr&&!isBuy){
+    msg='注意：這是賣出交易，刪除只會移除交易記錄，先前因賣出而扣除/拆批的持倉不會自動還原，請事後到「持倉管理」確認。確定刪除？';
+  }
+  document.getElementById('del-msg').textContent=msg;
   document.getElementById('del-ok').onclick=()=>{
     state.trades=state.trades.filter(t=>t.id!==id);
+    // 回滾：移除這筆買進交易連動建立、且未被後續賣出改動過的持倉
+    if(isBuy&&linked.length){
+      const linkedUids=new Set(linked.map(h=>h.uid));
+      state.holdings=state.holdings.filter(h=>!linkedUids.has(h.uid));
+      // 一併清掉這些持倉殘留在每日收盤價的記錄
+      Object.values(state.days||{}).forEach(day=>{
+        if(day&&day.prices){linkedUids.forEach(u=>{delete day.prices[u];});}
+      });
+    }
     save();cm('del-modal');renderTrades();
+    if(typeof renderDash==='function')renderDash();
   };
   document.getElementById('del-modal').classList.add('open');
 }
