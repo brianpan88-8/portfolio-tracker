@@ -841,14 +841,16 @@ tbody tr:hover{background:#FAFBFC}
       <div class="fg"><label>日期</label><input type="date" id="tr-date" style="width:140px"></div>
       <div class="fg">
         <label>類型</label>
-        <select id="tr-type" onchange="onTrTypeChange()" style="padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--sf);font-size:13px">
+        <select id="tr-type" onchange="togTrType()" style="padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--sf);font-size:13px">
           <option value="buy">普通買進</option>
           <option value="sell">普通賣出</option>
           <option value="margin_buy">融資買進</option>
           <option value="margin_sell">融資賣出</option>
           <option value="short_sell">融券賣出</option>
           <option value="short_cover">融券回補</option>
-          <option value="dividend">股利</option>
+          <option value="cash_div">現金股利</option>
+          <option value="etf_div">ETF 配息</option>
+          <option value="stock_div">股票股利（配股）</option>
         </select>
       </div>
       <div class="fg"><label>代號</label><input type="text" id="tr-code" placeholder="2330" style="width:80px" oninput="onTrCodeInput()"></div>
@@ -871,7 +873,8 @@ tbody tr:hover{background:#FAFBFC}
         <option value="">所有類型</option>
         <option value="buy">買進</option><option value="sell">賣出</option>
         <option value="margin_buy">融資買</option><option value="margin_sell">融資賣</option>
-        <option value="dividend">股利</option>
+        <option value="cash_div">現金股利</option><option value="etf_div">ETF 配息</option>
+        <option value="stock_div">股票股利</option>
       </select>
     </div>
     <div style="overflow-x:auto">
@@ -3475,6 +3478,11 @@ function buildPnlCurve(fromDate, toDate){
   for(const t of [...state.trades].sort((a,b)=>a.date.localeCompare(b.date))){
     if(fromDate&&t.date>=fromDate)continue;
     if(t._directPnl!==undefined){basePnl+=t._directPnl;continue;}
+    // 現金股利／ETF 配息：直接計入已實現收入，不動 FIFO 佇列
+    if(t.type==='cash_div'||t.type==='etf_div'||t.type==='dividend'){
+      basePnl+=(t.qty||0)*(t.price||0)*1000;continue;
+    }
+    if(t.type==='stock_div')continue;
     const key=t.code+'|'+(t.type.includes('margin')?'m':'s');
     if(!queues[key])queues[key]=[];
     if(typeB(t)){
@@ -3510,6 +3518,11 @@ function buildPnlCurve(fromDate, toDate){
       dailyRealized[t.date]=(dailyRealized[t.date]||0)+t._directPnl;
       continue;
     }
+    if(t.type==='cash_div'||t.type==='etf_div'||t.type==='dividend'){
+      dailyRealized[t.date]=(dailyRealized[t.date]||0)+(t.qty||0)*(t.price||0)*1000;
+      continue;
+    }
+    if(t.type==='stock_div')continue;
     const key=t.code+'|'+(t.type.includes('margin')?'m':'s');
     if(!queuesCopy[key])queuesCopy[key]=[];
     if(typeB(t)){
@@ -4140,13 +4153,14 @@ const TR_TYPES={
   buy:'買進（現股）',sell:'賣出（現股）',
   margin_buy:'融資買進',margin_sell:'融資償還',
   short_sell:'融券賣出',short_cover:'融券回補',
-  cash_div:'現金股利',etf_div:'ETF配息',stock_div:'股票股利'
+  cash_div:'現金股利',etf_div:'ETF配息',stock_div:'股票股利',
+  dividend:'股利（舊格式）'
 };
 const TR_BADGE={
   buy:'b-stock',sell:'b-stock',
   margin_buy:'b-margin',margin_sell:'b-margin',
   short_sell:'b-short',short_cover:'b-short',
-  cash_div:'b-etf',etf_div:'b-etf',stock_div:'b-etf'
+  cash_div:'b-etf',etf_div:'b-etf',stock_div:'b-etf',dividend:'b-etf'
 };
 
 function togTrType(){
@@ -4175,9 +4189,43 @@ function syncTrName(){
   if(h)document.getElementById('tr-name').value=h.name;
 }
 
+// 拆快照時把舊批的收盤價複製給新批（fromDate 起，含當日）
+function copyPricesFrom(oldUid,newUid,fromDate){
+  Object.keys(state.days||{}).forEach(d=>{
+    if(d<fromDate)return;
+    const day=state.days[d];
+    if(day&&day.prices&&day.prices[oldUid]!=null&&day.prices[newUid]==null){
+      day.prices[newUid]=day.prices[oldUid];
+    }
+  });
+}
+
 function syncTradeToHolding(trade){
-  // 股利不影響持股張數
-  if(trade.type==='dividend')return null;
+  // 現金股利／ETF 配息：只是收入，不影響持股張數與均成本
+  if(trade.type==='cash_div'||trade.type==='etf_div'||trade.type==='dividend')return null;
+  // 股票股利（配股）：張數增加、總成本不變 → 均成本被稀釋。
+  // 用與「部分賣出」相同的拆快照做法：舊批結束於除權日、新批從除權日開始，
+  // 這樣除權日之前的歷史市值不會被回溯放大。
+  if(trade.type==='stock_div'){
+    const list=state.holdings.filter(h=>h.code===trade.code&&h.type==='stock'&&!h.endDate);
+    const tot=list.reduce((s,h)=>s+h.qty,0);
+    if(!list.length||!(tot>0)||!(trade.qty>0))return {action:'none',name:trade.name};
+    list.forEach(t=>{
+      const add=trade.qty*(t.qty/tot);
+      const totalCost=t.cost*t.qty;
+      const nq=t.qty+add;
+      if((holdingStartDate(t)||'')===trade.date){
+        t.qty=nq;t.cost=totalCost/nq;
+        return;
+      }
+      const nh={...t,uid:genUid(),qty:nq,cost:totalCost/nq,
+        startDate:trade.date,endDate:null,_carry:true,_srcTrade:trade.id};
+      t.endDate=trade.date;
+      state.holdings.push(nh);
+      copyPricesFrom(t.uid,nh.uid,trade.date);
+    });
+    return {action:'stock_div',name:trade.name,qty:tot+trade.qty};
+  }
   const typeMap={buy:'stock',sell:'stock',margin_buy:'margin',margin_sell:'margin',short_sell:'short',short_cover:'short'};
   const htype=typeMap[trade.type];
   if(!htype)return null;
@@ -4227,9 +4275,9 @@ function syncTradeToHolding(trade){
           if(t.type==='margin')nh.marginBal=(t.marginBal||0)*(newQty/t.qty);
           t.endDate=trade.date;
           state.holdings.push(nh);
-          // 複製當日收盤價給新批，避免該日市值缺價
-          const dp=state.days[trade.date];
-          if(dp&&dp.prices&&dp.prices[t.uid]!=null)dp.prices[nh.uid]=dp.prices[t.uid];
+          // 複製「交易日起（含）之後」所有日期的收盤價給新批。
+          // 只複製當日的話，補登過去日期時中間所有交易日都會缺價。
+          copyPricesFrom(t.uid,nh.uid,trade.date);
         }
         reducedTo=newQty;
         remain=0;
@@ -4263,6 +4311,7 @@ function addTrade(){
     const msgMap={
       new:'已新增持倉 '+syncRes.name+'（'+syncRes.qty+' 張）',
       reduce:'已減少持倉 '+syncRes.name+'（剩 '+syncRes.qty+' 張）',
+      stock_div:'已配股：'+syncRes.name+' 增為 '+fn(syncRes.qty,3)+' 張，總成本不變（均成本已稀釋）',
       close:'已出清持倉 '+syncRes.name,
       none:'交易已記錄（查無對應持倉可扣除）'
     };
@@ -4324,6 +4373,8 @@ function confirmDelTrade(id){
   let msg='確定刪除這筆交易記錄？此操作不可復原。';
   if(isBuy&&linked.length){
     msg='這筆是買進交易，刪除時會一併移除它建立的持倉（'+tr.name+' '+linked.reduce((s,h)=>s+h.qty,0)+' 張）。確定刪除？';
+  } else if(tr&&tr.type==='stock_div'){
+    msg='注意：這是股票股利（配股），刪除只會移除交易記錄，先前因配股而拆批、調整過的張數與均成本不會自動還原，請事後到「持倉管理」確認。確定刪除？';
   } else if(tr&&!isBuy){
     msg='注意：這是賣出交易，刪除只會移除交易記錄，先前因賣出而扣除/拆批的持倉不會自動還原，請事後到「持倉管理」確認。確定刪除？';
   }
@@ -4407,7 +4458,7 @@ function computeRealized(){
         if(oldest.qty<=0)q.shift();
       }
     }
-    else if(type==='cash_div'||type==='etf_div'){
+    else if(type==='cash_div'||type==='etf_div'||type==='dividend'){
       const income=qty*price*1000;
       realized.push({date,code,name,type,qty,entryPrice:null,exitPrice:price,pnl:income,pnlPct:null,days:null,entryDate:null,category:'dividend'});
     }
@@ -4544,7 +4595,7 @@ function renderRealized(){
   else{
     filtered.forEach(e=>{
       const tr=document.createElement('tr');
-      const typeLabel=e.type==='cash_div'?'現金股利':e.type==='etf_div'?'ETF配息':e.type==='stock_div'?'股票股利':e.type==='sell'?'賣出':e.type==='margin_sell'?'融資償還':'融券回補';
+      const typeLabel=(e.type==='cash_div'||e.type==='dividend')?'現金股利':e.type==='etf_div'?'ETF配息':e.type==='stock_div'?'股票股利':e.type==='sell'?'賣出':e.type==='margin_sell'?'融資償還':'融券回補';
       const badge=e.category==='dividend'?'b-etf':e.type==='sell'?'b-stock':e.type==='margin_sell'?'b-margin':'b-short';
       const daysCell=e.directEntry?'<span style="font-size:11px;color:var(--tm)">券商損益</span>':e.days!==null?e.days+'天':'—';
       tr.innerHTML=`<td class="tl" style="font-family:var(--mono)">${e.date}</td>
