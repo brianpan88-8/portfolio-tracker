@@ -388,6 +388,11 @@ tbody tr:hover{background:#FAFBFC}
   .tg-editbtn{opacity:1!important}
   .tg-panes{grid-template-columns:1fr!important}
   .tg-pane+.tg-pane{border-left:none!important;border-top:1px solid var(--bdl)!important;padding-top:12px!important;margin-top:8px!important}
+  .tg-pi{grid-template-columns:1fr 1fr!important;gap:12px!important}
+  /* 股利依個股彙總：手機隱藏次要欄位（累計買進金額、最近一次） */
+  #rz-divtbl th:nth-child(6),#rz-divtbl td:nth-child(6),
+  #rz-divtbl th:nth-child(8),#rz-divtbl td:nth-child(8){display:none!important}
+  .tg-pi b{font-size:16px!important}
   .tg-dn-box{height:290px!important}
   .tg-dn-c2{font-size:13px!important}
   .tg-dn-c3{font-size:16px!important}
@@ -563,6 +568,11 @@ tbody tr:hover{background:#FAFBFC}
 .h-flag{display:inline-block;font-size:9.5px;padding:1px 5px;border-radius:4px;margin-right:4px;white-space:nowrap;font-family:var(--sans)}
 .h-flag-new{background:#E6F2E9;color:#2E7D5E;font-weight:700}
 .h-flag-todo{background:#FFF6E2;color:#8a5a00}
+.tg-pi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px}
+.tg-pi > div{border-left:2px solid var(--bdl);padding-left:12px}
+.tg-pi i{display:block;font-style:normal;font-size:10.5px;color:var(--tm);margin-bottom:5px}
+.tg-pi b{display:block;font-size:19px;font-weight:700;font-family:var(--mono);color:#4a5148;line-height:1.1}
+.tg-pi em{display:block;font-style:normal;font-size:10px;color:var(--tm);margin-top:4px;font-family:var(--mono)}
 .tg-dn-wrap{margin:2px 0}
 .tg-panes{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .tg-pane{padding:0 6px}
@@ -917,6 +927,33 @@ tbody tr:hover{background:#FAFBFC}
       </div>
     </div>
   </div>
+
+  <!-- 常駐總計 -->
+  <div class="cg cg4" style="margin:0 18px 14px">
+    <div class="card accent-blue">
+      <div class="clbl">今年已實現</div>
+      <div class="cval" id="rz-yr-tot">—</div>
+      <div class="csub" id="rz-yr-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="clbl">今年股利收入</div>
+      <div class="cval" id="rz-yr-div">—</div>
+      <div class="csub" id="rz-yr-divsub">—</div>
+    </div>
+    <div class="card accent-blue">
+      <div class="clbl">累計已實現</div>
+      <div class="cval" id="rz-all-tot">—</div>
+      <div class="csub" id="rz-all-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="clbl">累計股利收入</div>
+      <div class="cval" id="rz-all-div">—</div>
+      <div class="csub" id="rz-all-divsub">—</div>
+    </div>
+  </div>
+
+  <!-- 依個股彙總股利 -->
+  <div id="rz-divbycode" style="margin:0 18px 16px"></div>
 
   <!-- 摘要 -->
   <div id="rz-summary" class="cg cg4" style="margin:0 18px 16px;display:none">
@@ -4554,6 +4591,12 @@ function renderRealized(){
   sec('rz-yr-div',fc(yrDiv,0),cc(yrDiv),'cval');
   sec('rz-all-tot',fc(allTot,0),cc(allTot),'cval');
   se('rz-all-sub',`買賣 ${fc(allTrade,0)} ／ 股利 ${fc(allDiv,0)}`);
+  sec('rz-all-div',fc(allDiv,0),cc(allDiv),'cval');
+  const allDivN=events.filter(e=>e.category==='dividend').length;
+  const yrDivN=yrEvents.filter(e=>e.category==='dividend').length;
+  se('rz-yr-divsub',yrDivN?`${yrDivN} 筆`:'尚無記錄');
+  se('rz-all-divsub',allDivN?`${allDivN} 筆 · 佔已實現 ${allTot!==0?fn(allDiv/Math.abs(allTot)*100,1):'0.0'}%`:'尚無記錄');
+  renderDivByCode(events);
 
   // filter for table
   let filtered=events;
@@ -4614,6 +4657,47 @@ function renderRealized(){
 
   // yearly summary
   renderYearlySummary(events);
+}
+
+// 依個股彙總股利（含對累計買進金額的殖利率）
+function renderDivByCode(events){
+  const el=document.getElementById('rz-divbycode');if(!el)return;
+  const divs=events.filter(e=>e.category==='dividend');
+  if(!divs.length){el.innerHTML='';return;}
+  const g={};
+  divs.forEach(e=>{
+    const o=g[e.code]||(g[e.code]={code:e.code,name:e.name,amt:0,n:0,first:e.date,last:e.date});
+    o.amt+=e.pnl;o.n++;
+    if(e.date<o.first)o.first=e.date;
+    if(e.date>o.last)o.last=e.date;
+  });
+  // 該檔累計買進金額（含融資買），作為殖利率分母
+  (state.trades||[]).forEach(t=>{
+    if(!g[t.code])return;
+    if(t.type==='buy'||t.type==='margin_buy')g[t.code].buyAmt=(g[t.code].buyAmt||0)+(t.qty||0)*(t.price||0)*1000;
+  });
+  const rows=Object.values(g).sort((a,b)=>b.amt-a.amt);
+  const tot=rows.reduce((s,r)=>s+r.amt,0);
+  let h=`<div class="twrap" id="rz-divtbl"><div class="thdr"><span class="ttl">股利 · 依個股彙總</span>
+    <span style="font-size:11px;color:var(--tm)">累計 ${fc(tot,0)}　共 ${divs.length} 筆</span></div>
+    <table><thead><tr><th class="tl">代號</th><th class="tl">名稱</th><th>筆數</th><th>累計股利</th><th>佔比</th>
+      <th>累計買進金額</th><th>累計殖利率</th><th class="tl">最近一次</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const y=r.buyAmt>0?r.amt/r.buyAmt*100:null;
+    h+=`<tr><td class="tl">${r.code}</td><td class="tls">${r.name||''}</td><td>${r.n}</td>
+      <td class="up" style="font-weight:600">${fc(r.amt,0)}</td>
+      <td>${tot!==0?fn(r.amt/tot*100,1)+'%':'—'}</td>
+      <td style="font-family:var(--mono)">${r.buyAmt>0?'$'+fn(r.buyAmt,0):'—'}</td>
+      <td>${y!=null?fn(y,2)+'%':'—'}</td>
+      <td class="tl" style="font-family:var(--mono)">${r.last}</td></tr>`;
+  });
+  h+=`<tr><td class="tl sum-row" colspan="3">合計</td><td class="sum-row up">${fc(tot,0)}</td>
+      <td class="sum-row">100.0%</td><td class="sum-row" colspan="3"></td></tr>`;
+  h+=`</tbody></table></div>
+    <div style="font-size:11px;color:var(--tm);padding:8px 2px 0;line-height:1.7">
+      累計殖利率 = 該檔累計股利 ÷ 該檔累計買進金額（含融資買進），是「對投入本金」的回收比例，不是年化殖利率。
+    </div>`;
+  el.innerHTML=h;
 }
 
 function renderYearlySummary(events){
@@ -6383,6 +6467,27 @@ function renderTarget(){
       融券部位不納入推估。
     </div>
   </div>`;
+
+  // ── ①c 被動收入（股利）──
+  const _dv=(typeof computeRealized==='function')?computeRealized().filter(e=>e.category==='dividend'):[];
+  if(_dv.length){
+    const cum=_dv.reduce((s,e)=>s+e.pnl,0);
+    const d1=new Date(T.dateStr+'T00:00:00');d1.setFullYear(d1.getFullYear()-1);
+    const cut=d1.toISOString().slice(0,10);
+    const last12=_dv.filter(e=>e.date>cut).reduce((s,e)=>s+e.pnl,0);
+    const yld=T.totalMv>0?last12/T.totalMv*100:null;
+    const proj=(yld!=null&&T.tMv>0)?T.tMv*yld/100:null;
+    h+=`<div class="tg-card"><div class="tg-ttl"><span>被動收入 · 股利</span>
+        <span style="font-weight:400;letter-spacing:0">近 12 個月 ${fmtD(cut)} 起</span></div>
+      <div class="tg-pi">
+        <div><i>近 12 個月股利</i><b>$${fn(last12,0)}</b><em>${_dv.filter(e=>e.date>cut).length} 筆</em></div>
+        <div><i>現金殖利率</i><b>${yld!=null?fn(yld,2)+'%':'—'}</b><em>對持股市值 $${fn(T.totalMv,0)}</em></div>
+        <div><i>目標達成後推估年股利</i><b style="color:${TG_AC}">${proj!=null?'$'+fn(proj,0):'—'}</b><em>目標市值 × 目前殖利率</em></div>
+        <div><i>累計已領股利</i><b>$${fn(cum,0)}</b><em>${_dv.length} 筆</em></div>
+      </div>
+      <div class="tg-sc-note">推估年股利假設<b>殖利率維持不變</b>，僅供參考——你的組合以成長股為主，配息本來就不是主要報酬來源，這個數字不宜當作財富自由的主要衡量標準。</div>
+    </div>`;
+  }
 
   // ── ①b 淨值結構雙環圖 ──
   if(T.cov.length){
